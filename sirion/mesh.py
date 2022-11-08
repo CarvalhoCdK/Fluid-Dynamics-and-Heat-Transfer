@@ -6,7 +6,18 @@ class Mesh(object):
     """
     Represents a 2D retangular mesh.
     ...
-
+    
+    Parameters
+    ----------
+        nx : int
+            Number of elements in x direction
+        ny : int
+            Number of elements in y direction
+        lx : float
+            Length in x direction
+        ly : float
+            Length in y direction
+        
     Attributes
     ----------
     nodes : dict
@@ -25,8 +36,8 @@ class Mesh(object):
         'E' : ndarray (number)
         'S' : ndarray (number)
         'N' : ndarray (number)
-        
-
+    
+    
     Methods
     -------
     plot()
@@ -34,7 +45,8 @@ class Mesh(object):
     """
 
 
-    def __init__(self, nx, ny, lx, ly):
+    def __init__(self, nx: int, ny: int, lx: float, ly: float):
+        
         self.nx = nx
         self.ny = ny
         self.lx = lx
