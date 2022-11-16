@@ -83,10 +83,10 @@ class NS_x(object):
         alfas, betas = self._wuds((vS0 + vSE0) / 2, rho, gamma, deltay)
         alfan, betan = self._wuds((vE0 + vP0) / 2, rho, gamma, deltay)
         
-        print(f'alfaw : {alfaw}')
-        print(f'alfae : {alfae}')
-        print(f'alfas : {alfas}')
-        print(f'alfan : {alfan}')
+        # print(f'alfaw : {alfaw}')
+        # print(f'alfae : {alfae}')
+        # print(f'alfas : {alfas}')
+        # print(f'alfan : {alfan}')
 
         ####
 
@@ -224,10 +224,6 @@ class NS_y(object):
         alfas, betas = self._wuds((vP0 + vS0) / 2, rho, gamma, deltax)
         alfan, betan = self._wuds((vP0 + vN0) / 2, rho, gamma, deltax)
 
-        print(f'alfaw : {alfaw}')
-        print(f'alfae : {alfae}')
-        print(f'alfas : {alfas}')
-        print(f'alfan : {alfan}')
 
         Aw =  (0.5 + alfaw)*fw + betaw*dx
         Ae = -(0.5 - alfae)*fe + betae*dx

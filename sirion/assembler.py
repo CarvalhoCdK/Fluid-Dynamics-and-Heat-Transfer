@@ -1,4 +1,5 @@
 import numpy as np
+from time import perf_counter
 
 from mesh import Mesh
 from interp import NS_x, NS_y
@@ -6,8 +7,8 @@ from interp import NS_x, NS_y
 
 # Re = 100, 400 e 1000
 # Parâmtros da malha
-nx = 5
-ny = 5
+nx = 1000
+ny = 1000
 
 # Reynolds
 Re = 100
@@ -22,9 +23,19 @@ gamma = 1
 
 U = Re*gamma / (rho*L)
 
+TIMER = np.zeros(10)
+j = 0
+
+TIMER[j] = perf_counter()
+j += 1
+
 umesh = Mesh(nx + 1, ny, L, H)
 vmesh = Mesh(nx, ny + 1, L, H)
 pmesh = Mesh(nx, ny, L, H)
+
+TIMER[j] = perf_counter()
+j += 1
+print(f'Time: Meshing : {TIMER[1] - TIMER[0]}')
 
 # Initial Guess
 u = np.ones(umesh.elements['number'])*U
@@ -57,7 +68,8 @@ au = momentum_u.u_internal(id, w, e)
 
 momentum_v = NS_y(model)
 
-id = 2
-s = vmesh.neighbours['S'][id]
-n = vmesh.neighbours['N'][id]
-av = momentum_v.v_internal(id, s, n)
+for id in np.arange(100):
+    #print(id)
+    s = vmesh.neighbours['S'][id]
+    n = vmesh.neighbours['N'][id]
+    av = momentum_v.v_internal(id, s, n)
