@@ -67,16 +67,6 @@ class NS_x(object):
         pP0 = p[P0]
         pE0 = p[E0]
 
-        alfax, betax = self._wuds(uP0, rho, gamma, deltax)
-        print(f'uP0 : {uP0}')
-
-        print(f'alfax : {alfax}')
-        print(f'betax : {betax}')
-
-        vC0 = (vS0 + vSE0 + vE0 + vP0) / 4 # v at volume center
-        alfay, betay = self._wuds(vC0, rho, gamma, deltay)
-        print(f'alfay : {alfay}')
-
         fw = rho*deltay*(uW0 + uP0) / 2
         fe = rho*deltay*(uE0 + uP0) / 2
         fs = rho*deltax*(vS0 + vSE0) / 2
@@ -85,12 +75,25 @@ class NS_x(object):
         dx = gamma*deltay / deltax
         dy = gamma*deltax / deltay
 
-        Lp = -deltay*(pE0 - pP0)
+        Lp = -deltay*(pE0 - pP0)      
 
-        Aw =  (0.5 + alfax)*fw + betax*dx
-        Ae = -(0.5 - alfax)*fe + betax*dx
-        As =  (0.5 + alfay)*fs + betay*dy
-        An = -(0.5 + alfay)*fn + betay*dy
+        ## WUDS
+        alfaw, betaw = self._wuds((uW0 + uP0) / 2, rho, gamma, deltax)
+        alfae, betae = self._wuds((uE0 + uP0) / 2, rho, gamma, deltax)
+        alfas, betas = self._wuds((vS0 + vSE0) / 2, rho, gamma, deltay)
+        alfan, betan = self._wuds((vE0 + vP0) / 2, rho, gamma, deltay)
+        
+        print(f'alfaw : {alfaw}')
+        print(f'alfae : {alfae}')
+        print(f'alfas : {alfas}')
+        print(f'alfan : {alfan}')
+
+        ####
+
+        Aw =  (0.5 + alfaw)*fw + betaw*dx
+        Ae = -(0.5 - alfae)*fe + betae*dx
+        As =  (0.5 + alfas)*fs + betas*dy
+        An = -(0.5 + alfan)*fn + betan*dy
         Ap = Aw + Ae + As + An
 
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
@@ -203,19 +206,8 @@ class NS_y(object):
         N0 = int(id)
         
         pP0 = p[P0]
-        pN0 = p[N0]
-
-        uC0 = (uP0 + uW0 + uN0 + uNW0) / 4 # v at volume center
-        print(f'uC0 : {uC0}')
-        alfax, betax = self._wuds(uC0, rho, gamma, deltax)
-
-        print(f'alfax : {alfax}')
-        print(f'betax : {betax}')
+        pN0 = p[N0]    
         
-        alfay, betay = self._wuds(vP0, rho, gamma, deltay)
-        print(f'alfay : {alfay}')
-        print(f'betay : {betay}')
-
         fw = rho*deltay*(uW0 + uNW0) / 2
         fe = rho*deltay*(uP0 + uN0) / 2
         fs = rho*deltax*(vP0 + vS0) / 2
@@ -226,10 +218,21 @@ class NS_y(object):
 
         Lp = -deltax*(pN0 - pP0)
 
-        Aw =  (0.5 + alfax)*fw + betax*dx
-        Ae = -(0.5 - alfax)*fe + betax*dx
-        As =  (0.5 + alfay)*fs + betay*dy
-        An = -(0.5 + alfay)*fn + betay*dy
+        ## WUDS
+        alfaw, betaw = self._wuds((uW0 + uNW0) / 2, rho, gamma, deltax)
+        alfae, betae = self._wuds((uP0 + uN0) / 2, rho, gamma, deltax)
+        alfas, betas = self._wuds((vP0 + vS0) / 2, rho, gamma, deltax)
+        alfan, betan = self._wuds((vP0 + vN0) / 2, rho, gamma, deltax)
+
+        print(f'alfaw : {alfaw}')
+        print(f'alfae : {alfae}')
+        print(f'alfas : {alfas}')
+        print(f'alfan : {alfan}')
+
+        Aw =  (0.5 + alfaw)*fw + betaw*dx
+        Ae = -(0.5 - alfae)*fe + betae*dx
+        As =  (0.5 + alfas)*fs + betas*dy
+        An = -(0.5 + alfan)*fn + betan*dy
         Ap = Aw + Ae + As + An
 
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
