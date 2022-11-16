@@ -76,3 +76,10 @@ for P in np.arange(vmesh.elements['number']):
     print(f'nw : {nw}')
     print(f'w : {w}')
     print(f'p : {p}')
+
+
+nu = umesh.elements['number']
+nv = vmesh.elements['number']
+
+u = np.arange(0, nu, 1)
+v = np.arange(0, nu, 1)
