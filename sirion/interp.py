@@ -20,7 +20,7 @@ class NS_x(object):
             return alfa, beta
         
     
-    def u_internal(self, id: int, W: int, E: int):
+    def internal(self, id: int, W: int, E: int):
         """
         Ap*uP = Aw*uW + Ae*uE + As*uS + An*uN + Lp + B
 
@@ -99,7 +99,7 @@ class NS_x(object):
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
 
 
-    def boundary(self, face, t):
+    def boundary(self, id: int, face, tf):
         """
         """
         u = self.model['u']
@@ -108,43 +108,49 @@ class NS_x(object):
         gamma = self.model['gamma']
         deltax = self.model['deltax']
         deltay = self.model['deltay']
-
-        dx = gamma*deltay / deltax
-        dy = gamma*deltax / deltay
-
-        # x :>
-        Pe = rho*u*dx / gamma
-        alfax = Pe**2 / (10 + 2*Pe*2)
-        # y :>
-        Pe = rho*v*dy / gamma
-        alfay = Pe**2 / (10 + 2*Pe*2)
+        nx = self.model['nx']
 
         A =  np.zeros(6)
-        A[-1] = t  # B
+        A[-1] = tf  # B
 
-        # [Ap, Aw, Ae, As, An, B]
-        # [0,  1,  2,  3,  4,  5]
+        # [Ap, Aw, Ae, As, An, Lp, B]
+        # [0,  1,  2,  3,  4,  5,  6]
         if face =='W':
-            A[0] = 0.5 + alfax
-            A[2] = -0.5 + alfax  # Ae
+            A[0] = 1
 
         if face =='E':
-            A[0] = 0.5 + alfax  # Ap
-            A[1] = -0.5 + alfax  # Aw
-
+            A[0] = 1
+            
         if face =='S':
-            A[0] = 0.5 + alfay  # Ap
-            A[4] = -0.5 + alfay  # An
+            line = id // nx
+            P0 = int(id + nx - line - 2)
+            E0 = int(P0 + 1)
+            
+            vP0 = v[P0]
+            vE0 = v[E0]
+
+            alfan, betan = self._wuds((vE0 + vP0) / 2, rho, gamma, deltay)
+
+            A[0] = 0.5 + alfan  # Ap
+            A[4] = -0.5 + alfan  # An
 
         if face =='N':
-            A[0] = 0.5 + alfay  # Ap
-            A[3] = -0.5 + alfay  # As
+            line = id // nx
+            S0 = int(id - line - 1)
+            SE0 = int(S0 + 1)
 
+            vS0 = v[S0]
+            vSE0 = v[SE0]
+
+            alfas, betas = self._wuds((vS0 + vSE0) / 2, rho, gamma, deltay)
+
+            A[0] = 0.5 + alfas  # Ap
+            A[3] = -0.5 + alfas  # As
 
         return A
 
-####
-####
+################################################################################
+# V ############################################################################
 class NS_y(object):
     """
     """
@@ -161,7 +167,7 @@ class NS_y(object):
             return alfa, beta
         
     
-    def v_internal(self, id: int, S: int, N: int):
+    def internal(self, id: int, S: int, N: int):
         """
         Ap*uP = Aw*uW + Ae*uE + As*uS + An*uN + Lp + B
 
@@ -232,3 +238,53 @@ class NS_y(object):
         Ap = Aw + Ae + As + An
 
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
+
+
+    def boundary(self, id: int, face, tf):
+        """
+        """
+        u = self.model['u']
+        v = self.model['v']
+        rho = self.model['rho']
+        gamma = self.model['gamma']
+        deltax = self.model['deltax']
+        deltay = self.model['deltay']
+        nx = self.model['nx']
+
+        A =  np.zeros(6)
+        A[-1] = tf  # B
+
+        # [Ap, Aw, Ae, As, An, Lp, B]
+        # [0,  1,  2,  3,  4,  5,  6]
+        if face =='W':
+            line = id // nx
+            P0 = int(id + line - nx)
+            N0 = int(id + line + 1)
+
+            uP0 = u[P0]
+            uN0 = u[N0]
+
+            alfae, betae = self._wuds((uP0 + uN0) / 2, rho, gamma, deltax)
+
+            A[0] = 0.5 + alfae  # Ap
+            A[2] = -0.5 + alfae  # Ae
+
+        if face =='E':
+            W0 = int(P0 - 1)
+            NW0 = int(N0 + 1)
+
+            uW0 = u[W0]
+            uNW0 = u[NW0]
+            
+            alfaw, betaw = self._wuds((uW0 + uNW0) / 2, rho, gamma, deltax)
+            
+            A[0] = 0.5 + alfaw  # Ap
+            A[1] = -0.5 + alfaw  # Aw
+            
+        if face =='S':
+            A[0] = 1
+
+        if face =='N':
+            A[0] = 1
+
+        return A
