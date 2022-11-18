@@ -346,8 +346,8 @@ from time import perf_counter
 ## PARAMETROS
 
 ## MALHA
-nx = 150
-ny = 150
+nx = 5
+ny = 5
 a = 1
 b = 1
 
@@ -559,7 +559,7 @@ np.set_printoptions(precision = 2)
 #### Solver
 print(f'\n Solução TDMA')
 start_time = perf_counter()
- 
+print(f'c : \n{c}')
 t_tdma = tdma_2d(c, B, 1, nxe, nye, tol = 1e-6)[u_dof]
 
 end_time = perf_counter()

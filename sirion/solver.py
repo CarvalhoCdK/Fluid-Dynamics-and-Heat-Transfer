@@ -52,25 +52,25 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->
         t0 = np.copy(te)
   
         # First and last line: 
-        for start in np.array((1, n - nxe + 1)):
+        # for start in np.array((0, n - nxe )):
 
-            stop = start + nxe - 2
-            estart = start + nxe
-            estop = stop + nxe
+        #     stop = start + nxe - 2
+        #     estart = start + nxe
+        #     estop = stop + nxe
 
-            al = a[start:stop]
-            bl = b[start:stop]
-            cl = c[start:stop]
+        #     al = a[start:stop]
+        #     bl = b[start:stop]
+        #     cl = c[start:stop]
 
-            dl = np.multiply(dn[start:stop], te[estart+nxe:estop+nxe]) + \
-                 np.multiply(ds[start:stop], te[estart-nxe:estop-nxe]) + \
-                 B[start:stop]
+        #     dl = np.multiply(dn[start:stop], te[estart+nxe:estop+nxe]) + \
+        #          np.multiply(ds[start:stop], te[estart-nxe:estop-nxe]) + \
+        #          B[start:stop]
 
-            tl = tdma1(al, bl, cl, dl)
-            te[estart:estop] = tl
+        #     tl = tdma1(al, bl, cl, dl)
+        #     te[estart:estop] = tl
 
         # Middle lines
-        lines = np.arange(1,nye-1)
+        lines = np.arange(0,nye)
 
         for line in lines:
             
@@ -93,9 +93,9 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->
         
         diff = np.max(np.abs(te-t0))
 
-        #if it % 100 == 0:
-            #print(f'it : {it}')
-            #print(f'Error : {diff} \n')
+        if it % 10 == 0:
+            print(f'it : {it}')
+            print(f'Error : {diff} \n')
 
         it += 1
         if it > max_it:

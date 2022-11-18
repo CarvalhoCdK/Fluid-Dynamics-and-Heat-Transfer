@@ -21,29 +21,29 @@ class Prime(object):
         deltay = self.model['deltay']
         nx = self.model['nx']
         
-        print(f'Calculate velocities uh and vh')
+        #print(f'Calculate velocities uh and vh')
         op = perf_counter()
 
         uh, Apu, vh, Apv = self._get_velocity(u, uequation, v, vequation, p)
 
         ed = perf_counter()
-        print(f'Time : {ed - op} \n')
+        #print(f'Time : {ed - op} \n')
         ####
 
-        print(f'Map pressure elements')
+       # print(f'Map pressure elements')
         op = perf_counter()
 
         [west, east, south, north, internal] = self._map_pressure()
 
         ed = perf_counter()
-        print(f'Time : {ed - op} \n')
+        #print(f'Time : {ed - op} \n')
         ####
 
-        print('Solve Pressure')
+        #print('Solve Pressure')
         op = perf_counter()
 
         c = self.solve_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal)
-        print(c)
+        #print(c)
         
 
     def _get_velocity(self, u, uequation, v, vequation, p):
@@ -180,6 +180,8 @@ class Prime(object):
             B = np.zeros(dof)
             
             for el in internal:
+                #print(f'el : {el}')
+                #print('Internal \n')
                 line = el // nx
 
                 w = el + line
@@ -196,30 +198,69 @@ class Prime(object):
                 B[el] = deltay*(uh[w] - uh[e]) + deltay*(vh[s] - vh[n])
 
             for el in west:
-                c[el,0] = 1 # Ap
-                c[el,2] = 1 # Ae
+                #c[el,0] = 1 # Ap
+                #c[el,2] = 1 # Ae
+
+                # Border balance
+                c[el,1] = 0 # deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[s] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] = deltay*(- uh[e]) + deltay*(vh[s] - vh[n]) + 0
 
             for el in east:
-                c[el,0] = 1 # Ap
-                c[el,1] = 1 # Aw
+                #c[el,0] = 1 # Ap
+                #c[el,1] = 1 # Aw
+                
+                # Border balance
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = 0 # deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[s] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] = deltay*(uh[w]) + deltay*(vh[s] - vh[n])
 
             for el in south:
-                c[el,0] = 1 # Ap
-                c[el,4] = 1 # An
+                #c[el,0] = 1 # Ap
+                #c[el,4] = 1 # An
+
+                # Border balance
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = 0 # deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[s] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] = deltay*(uh[w] - uh[e]) + deltay*(-vh[n])
 
             for el in north:
-                c[el,0] = 1 # Ap
-                c[el,3] = 1 # As
+                #c[el,0] = 1 # Ap
+                #c[el,3] = 1 # As
+
+                # Bordero balance
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = 0 # deltax*deltax / Apv[s] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] = deltay*(uh[w] - uh[e]) + deltay*(vh[s])
             
             return c, B
 
         c, B =  build_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal)
-        print(f'{c} \n')
-        print(B)
+        np.set_printoptions(precision = 2)
+        #print(f'{c} \n')
+        #print(B)
 
-        pressures = tdma_2d(c, B, p, nx, ny, sweep ='lines', tol=1e-6, max_it=1e6)
+        #pressures = np.linalg.solve(Auu, Buu)
+        print('TDMA \n')
+        pressures = tdma_2d(c, B, p, nx, ny, sweep ='lines', tol=1e-6, max_it=1000)
 
-        print(pressures)
+        print(f'pressures {pressures}')
 
 
 
