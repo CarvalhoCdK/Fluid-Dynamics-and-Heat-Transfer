@@ -1,5 +1,8 @@
 
 import numpy as np
+from numba import njit, jit
+
+
 
 from mesh import Mesh
 
@@ -14,22 +17,22 @@ class NS_x(object):
     def _wuds(self,u, rho, gamma, delta):
 
             Pe = rho*u*delta / gamma
-            alfa = Pe**2 / (10 + 2*Pe**2)
+            alfa = Pe*np.abs(Pe) / (10 + 2*Pe**2)
             beta = (1 + 0.005*Pe**2) / (1 + 0.05*Pe**2)
 
             return alfa, beta
         
     
-    def internal(self, id: int, W: int, E: int):
+    def internal(self, id: int, u, v, p):
         """
         Ap*uP = Aw*uW + Ae*uE + As*uS + An*uN + Lp + B
 
         Return:
             [Ap, Aw, Ae, As, An, Lp, B]
         """
-        u = self.model['u']
-        v = self.model['v']
-        p = self.model['p']
+        #u = self.model['u']
+        #v = self.model['v']
+        #p = self.model['p']
 
         rho = self.model['rho']
         gamma = self.model['gamma']
@@ -41,8 +44,8 @@ class NS_x(object):
         ## Index mapping
         # u : centered
         P0 = id
-        W0 = int(W)#neighbours['W']
-        E0 = int(E)#neighbours['E']
+        W0 = int(id - 1)#int(W)#neighbours['W']
+        E0 = int(id + 1)#int(E)#neighbours['E']
 
         uW0 = u[W0]
         uP0 = u[P0]
@@ -72,6 +75,11 @@ class NS_x(object):
         fs = rho*deltax*(vS0 + vSE0) / 2
         fn = rho*deltax*(vE0 + vP0) / 2
 
+        # print(f'fw : {fw}')
+        # print(f'fe : {fe}')
+        # print(f'fs : {fs}')
+        # print(f'fn : {fn}')
+
         dx = gamma*deltay / deltax
         dy = gamma*deltax / deltay
 
@@ -99,11 +107,13 @@ class NS_x(object):
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
 
 
-    def boundary(self, id: int, face, tf):
+    def boundary(self, id: int, face, tf, u, v, p):
         """
+        Return:
+            [Ap, Aw, Ae, As, An, Lp, B]
         """
-        u = self.model['u']
-        v = self.model['v']
+        #u = self.model['u']
+        #v = self.model['v']
         rho = self.model['rho']
         gamma = self.model['gamma']
         deltax = self.model['deltax']
@@ -167,16 +177,16 @@ class NS_y(object):
             return alfa, beta
         
     
-    def internal(self, id: int, S: int, N: int):
+    def internal(self, id: int, u, v, p):
         """
         Ap*uP = Aw*uW + Ae*uE + As*uS + An*uN + Lp + B
 
         Return:
             [Ap, Aw, Ae, As, An, Lp, B]
         """
-        u = self.model['u']
-        v = self.model['v']
-        p = self.model['p']
+        #u = self.model['u']
+        #v = self.model['v']
+        #p = self.model['p']
 
         rho = self.model['rho']
         gamma = self.model['gamma']
@@ -188,8 +198,8 @@ class NS_y(object):
         ## Index mapping
         # u : centered
         P0 = id
-        S0 = int(S)#neighbours['S']
-        N0 = int(N)#neighbours['N']
+        S0 = int(id - nx)#int(S)#neighbours['S']
+        N0 = int(id + nx)#int(N)#neighbours['N']
 
         vS0 = v[S0]
         vP0 = v[P0]
@@ -240,11 +250,11 @@ class NS_y(object):
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
 
 
-    def boundary(self, id: int, face, tf):
+    def boundary(self, id: int, face, tf, u, v, p):
         """
         """
-        u = self.model['u']
-        v = self.model['v']
+        #u = self.model['u']
+        #v = self.model['v']
         rho = self.model['rho']
         gamma = self.model['gamma']
         deltax = self.model['deltax']
@@ -256,11 +266,11 @@ class NS_y(object):
 
         # [Ap, Aw, Ae, As, An, Lp, B]
         # [0,  1,  2,  3,  4,  5,  6]
-        if face =='W':
-            line = id // nx
-            P0 = int(id + line - nx)
-            N0 = int(id + line + 1)
+        line = id // nx
+        P0 = int(id + line - nx)
+        N0 = int(id + line + 1)
 
+        if face =='W':
             uP0 = u[P0]
             uN0 = u[N0]
 
@@ -271,7 +281,7 @@ class NS_y(object):
 
         if face =='E':
             W0 = int(P0 - 1)
-            NW0 = int(N0 + 1)
+            NW0 = int(N0 - 1)
 
             uW0 = u[W0]
             uNW0 = u[NW0]

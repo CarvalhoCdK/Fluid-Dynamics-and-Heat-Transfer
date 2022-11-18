@@ -145,10 +145,10 @@ class Mesh(object):
             bc = np.array([wb, eb, sb, nb])
             border[bc] = -1
 
-            w[i] = border[0]
-            e[i] = border[1]
-            s[i] = border[2]
-            n[i] = border[3]
+            w[i] = int(border[0])
+            e[i] = int(border[1])
+            s[i] = int(border[2])
+            n[i] = int(border[3])
 
         neigh = {
             'W' : w,

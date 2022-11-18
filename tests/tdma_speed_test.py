@@ -346,8 +346,8 @@ from time import perf_counter
 ## PARAMETROS
 
 ## MALHA
-nx = 400
-ny = 400
+nx = 150
+ny = 150
 a = 1
 b = 1
 
