@@ -14,7 +14,7 @@ class Prime(object):
 
         self.model = model
 
-    def solve(self,u, uequation, v, vequation, p):
+    def solve(self, u, uequation, v, vequation, p):
 
         
         deltax = self.model['deltax']
@@ -33,9 +33,12 @@ class Prime(object):
             #print(f'Calculate velocities uh and vh')
             op = perf_counter()
 
+            #print(f'avg u: {np.average(u)}')
+
             uh, Apu, vh, Apv, uinternal, vinternal = self._get_velocity(u, uequation, v, vequation, p)
 
             #print(f'uh : {uh}')
+            #print(f'avg uh: {np.average(uh)}')
 
             ed = perf_counter()
             #print(f'Time : {ed - op} \n')
@@ -57,6 +60,7 @@ class Prime(object):
             
             
             u, v = self.correct_velocity(uh, Apu, vh, Apv, p, uinternal, vinternal)
+           # print(f'avg u corrected: {np.average(u)}')
         
             perro = np.max(np.abs(p - p0))
             uerro = np.max(np.abs(u - u0))
@@ -88,6 +92,8 @@ class Prime(object):
         apu = np.zeros(umesh.elements['number'])
         uh = np.zeros(umesh.elements['number'])
         uinternal = []
+        unorth = []
+        usouth = []
 
         for el in np.arange(u.shape[0]):
             w = int(umesh.neighbours['W'][el])
@@ -102,10 +108,12 @@ class Prime(object):
                 a = uequation.boundary(el, 'E', 0, u, v, p)        
 
             elif s == -1:
-                a = uequation.boundary(el, 'S', 0, u, v, p)        
+                a = uequation.boundary(el, 'S', 0, u, v, p)
+                usouth.append(el)       
 
             elif n == -1:
                 a = uequation.boundary(el, 'N', U, u, v, p)
+                unorth.append(el)
                 #print(f'el : {el}')
                 #print(f'Navier coeff : {a}')
             
@@ -119,13 +127,16 @@ class Prime(object):
             uh[el] = (np.dot(a[1:5], unb) + a[-1]) / a[0]
             apu[el] = a[0]
 
-            print(f'uh : {uh}')
+            #print(f'uh : {uh}')
 
         # v     
         apv = np.zeros(vmesh.elements['number'])
         vh = np.zeros(vmesh.elements['number'])
         
         vinternal = []
+        vwest = []
+        veast = []
+
         for el in np.arange(u.shape[0]):
             w = int(vmesh.neighbours['W'][el])
             e = int(vmesh.neighbours['E'][el])
@@ -140,9 +151,11 @@ class Prime(object):
 
             elif w == -1:
                 a = vequation.boundary(el, 'W', 0, u, v, p)
+                vwest.append(el)
 
             elif e == -1:
-                a = vequation.boundary(el, 'E', 0, u, v, p)        
+                a = vequation.boundary(el, 'E', 0, u, v, p)
+                veast.append(el)        
             
             else:
                 a = vequation.internal(el, u, v, p)
@@ -152,8 +165,8 @@ class Prime(object):
             vh[el] = (np.dot(a[1:5], vnb) + a[-1]) / a[0]
             apv[el] = a[0]
 
-        uinternal = np.array(uinternal)
-        vinternal = np.array(vinternal)
+        uinternal = np.array(np.append(uinternal, unorth, usouth))
+        vinternal = np.array(np.append(vinternal, veast, vwest))
 
         return uh, apu, vh, apv, uinternal, vinternal
 
@@ -316,6 +329,8 @@ class Prime(object):
         u = np.zeros(dof)
         v = np.zeros(dof)
 
+        #print(f'avg uh: {np.average(uh)}')
+
         # u
         for el in uinternal:
             
@@ -324,6 +339,8 @@ class Prime(object):
             e = p + 1
 
             u[el] = uh[el] - deltay / Apu[el] * (pressure[e] - pressure[p])
+
+            print(f'correct: {deltay / Apu[el] * (pressure[e] - pressure[p])}')
         
         # v
         for el in vinternal:
@@ -335,3 +352,7 @@ class Prime(object):
             v[el] = vh[el] - deltax / Apv[el] * (pressure[n] - pressure[p])
 
         return u, v
+
+
+
+        #nao é só interno, norte e sul
