@@ -93,9 +93,9 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->
         
         diff = np.max(np.abs(te-t0))
 
-        if it % 10 == 0:
-            print(f'it : {it}')
-            print(f'Error : {diff} \n')
+        #if it % 10 == 0:
+           # print(f'it : {it}')
+            #print(f'Error : {diff} \n')
 
         it += 1
         if it > max_it:

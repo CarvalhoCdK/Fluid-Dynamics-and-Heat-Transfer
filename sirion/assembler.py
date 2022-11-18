@@ -9,15 +9,15 @@ from prime import Prime
 
 # Re = 100, 400 e 1000
 # Parâmtros da malha
-nx = 30
-ny = 30
+nx = 5
+ny = 5
 
 # Reynolds
-Re = 1#00
+Re = 100#00
 
 # Geometria
-L = 3
-H = 3
+L = 1
+H = 1
 
 # Propriedades
 rho = 1
@@ -134,13 +134,13 @@ model['U'] = U
 
 pv_coupling = Prime(model)
 
-Uh, Apu, Vh, Apv = pv_coupling._get_velocity(u, uequation, v, vequation, p)
-west, east, south, north, internal = pv_coupling._map_pressure()
+Uh, Apu, Vh, Apv, uniternal, vinternal = pv_coupling._get_velocity(u, uequation, v, vequation, p)
+#west, east, south, north = pv_coupling._map_pressure()
 
 deltax = model['deltax']
 deltay = model['deltay']
 nx = model['nx']
-pv_coupling.solve(u, uequation, v, vequation, p)
+pressure, u, v = pv_coupling.solve(u, uequation, v, vequation, p)
 #print(c)
 
 #uequation = NS_x(model)

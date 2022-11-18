@@ -21,29 +21,55 @@ class Prime(object):
         deltay = self.model['deltay']
         nx = self.model['nx']
         
-        #print(f'Calculate velocities uh and vh')
-        op = perf_counter()
+        diff = 1
+        tol = 1e-6
 
-        uh, Apu, vh, Apv = self._get_velocity(u, uequation, v, vequation, p)
+        while diff > tol:
 
-        ed = perf_counter()
-        #print(f'Time : {ed - op} \n')
-        ####
+            p0 = np.copy(p)
+            u0 = np.copy(u)
+            v0 = np.copy(v)
 
-       # print(f'Map pressure elements')
-        op = perf_counter()
+            #print(f'Calculate velocities uh and vh')
+            op = perf_counter()
 
-        [west, east, south, north, internal] = self._map_pressure()
+            uh, Apu, vh, Apv, uinternal, vinternal = self._get_velocity(u, uequation, v, vequation, p)
 
-        ed = perf_counter()
-        #print(f'Time : {ed - op} \n')
-        ####
+            #print(f'uh : {uh}')
 
-        #print('Solve Pressure')
-        op = perf_counter()
+            ed = perf_counter()
+            #print(f'Time : {ed - op} \n')
+            ####
 
-        c = self.solve_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal)
-        #print(c)
+        # print(f'Map pressure elements')
+            op = perf_counter()
+
+            [west, east, south, north, internal] = self._map_pressure()
+
+            ed = perf_counter()
+            #print(f'Time : {ed - op} \n')
+            ####
+
+            #print('Solve Pressure')
+            op = perf_counter()
+
+            p = self.solve_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal)
+            
+            
+            u, v = self.correct_velocity(uh, Apu, vh, Apv, p, uinternal, vinternal)
+        
+            perro = np.max(np.abs(p - p0))
+            uerro = np.max(np.abs(u - u0))
+            verro = np.max(np.abs(v - v0))
+
+            print(f'perro : {perro}')
+            print(f'uerro : {uerro}')
+            print(f'verro : {verro}')
+
+            diff = np.max(np.array([perro, uerro, verro]))
+
+
+        return p, u, v
         
 
     def _get_velocity(self, u, uequation, v, vequation, p):
@@ -61,6 +87,7 @@ class Prime(object):
         # u     
         apu = np.zeros(umesh.elements['number'])
         uh = np.zeros(umesh.elements['number'])
+        uinternal = []
 
         for el in np.arange(u.shape[0]):
             w = int(umesh.neighbours['W'][el])
@@ -79,18 +106,26 @@ class Prime(object):
 
             elif n == -1:
                 a = uequation.boundary(el, 'N', U, u, v, p)
+                #print(f'el : {el}')
+                #print(f'Navier coeff : {a}')
             
             else:
                 a = uequation.internal(el, u, v, p)
+                uinternal.append(el)
+
+            
 
             unb = np.array([u[w], u[e], u[s], u[n]])
             uh[el] = (np.dot(a[1:5], unb) + a[-1]) / a[0]
             apu[el] = a[0]
 
+            print(f'uh : {uh}')
+
         # v     
         apv = np.zeros(vmesh.elements['number'])
         vh = np.zeros(vmesh.elements['number'])
         
+        vinternal = []
         for el in np.arange(u.shape[0]):
             w = int(vmesh.neighbours['W'][el])
             e = int(vmesh.neighbours['E'][el])
@@ -111,12 +146,16 @@ class Prime(object):
             
             else:
                 a = vequation.internal(el, u, v, p)
+                vinternal.append(el)
 
             vnb = np.array([v[w], v[e], v[s], v[n]])
             vh[el] = (np.dot(a[1:5], vnb) + a[-1]) / a[0]
             apv[el] = a[0]
 
-        return uh, apu, vh, apv
+        uinternal = np.array(uinternal)
+        vinternal = np.array(vinternal)
+
+        return uh, apu, vh, apv, uinternal, vinternal
 
 
     def _map_pressure(self):
@@ -240,7 +279,7 @@ class Prime(object):
                 #c[el,0] = 1 # Ap
                 #c[el,3] = 1 # As
 
-                # Bordero balance
+                # Border balance
                 c[el,1] = deltay*deltay / Apu[w] # Aw
                 c[el,2] = deltay*deltay / Apu[e] # Ae
                 c[el,3] = deltax*deltax / Apv[s] # As
@@ -257,13 +296,42 @@ class Prime(object):
         #print(B)
 
         #pressures = np.linalg.solve(Auu, Buu)
-        print('TDMA \n')
+        #print('TDMA \n')
         pressures = tdma_2d(c, B, p, nx, ny, sweep ='lines', tol=1e-6, max_it=1000)
 
-        print(f'pressures {pressures}')
+        #print(f'pressures {pressures}')
+
+        return pressures
 
 
 
 
-    def correct_velocity():
-        pass
+    def correct_velocity(self, uh, Apu, vh, Apv, pressure, uinternal, vinternal):
+
+        deltax = self.model['deltax']
+        deltay = self.model['deltay']
+        nx = self.model['nx']
+
+        dof = uh.shape[0]
+        u = np.zeros(dof)
+        v = np.zeros(dof)
+
+        # u
+        for el in uinternal:
+            
+            line = el //nx
+            p = el - line - 1
+            e = p + 1
+
+            u[el] = uh[el] - deltay / Apu[el] * (pressure[e] - pressure[p])
+        
+        # v
+        for el in vinternal:
+            
+            line = el //nx
+            p = el - nx
+            n = el
+
+            v[el] = vh[el] - deltax / Apv[el] * (pressure[n] - pressure[p])
+
+        return u, v
