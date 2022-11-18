@@ -122,13 +122,10 @@ v = np.arange(vmesh.elements['number'])*0
 p = np.ones(pmesh.elements['number'])
 
 
-model = {
-    'umesh' : umesh,
-    'vmesh' : vmesh,
-    'pmesh' : pmesh,
-    'U' : U
-  }
-
+model['umesh'] = umesh
+model['vmesh'] = vmesh
+model['pmesh'] = pmesh
+model['U'] = U
 
 ## Get Ap, Aw, Ae, As, An and B ##################################################
 ## Solve algebric uh and vh
@@ -217,7 +214,14 @@ for el in np.arange(vmesh.elements['number']):
 
 pv_coupling = Prime(model)
 
-Uh, Apu, Vh, Apv = pv_coupling.solve(u, uequation, v, vequation, p)
+Uh, Apu, Vh, Apv = pv_coupling._get_velocity(u, uequation, v, vequation, p)
+west, east, south, north, internal = pv_coupling._map_pressure()
+
+deltax = model['deltax']
+deltay = model['deltay']
+nx = model['nx']
+c = pv_coupling.solve_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal)
+print(c)
 
 #uequation = NS_x(model)
 #vequation = NS_y(model)
