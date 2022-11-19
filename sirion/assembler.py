@@ -9,8 +9,8 @@ from prime import Prime
 
 # Re = 100, 400 e 1000
 # Parâmtros da malha
-nx = 5
-ny = 5
+nx = 3
+ny = 3
 
 # Reynolds
 Re = 100#00
