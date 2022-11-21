@@ -1,4 +1,5 @@
 
+
 import numpy as np
 from numba import njit, jit
 
@@ -38,8 +39,9 @@ class NS_x(object):
         gamma = self.model['gamma']
         deltax = self.model['deltax']
         deltay = self.model['deltay']
-        nx = self.model['nx']
-        ny = self.model['ny']
+        nx = self.model['unx']
+        vnx = self.model['vnx']
+        #ny = self.model['ny']
 
         ## Index mapping
         # u : centered
@@ -53,10 +55,16 @@ class NS_x(object):
 
         # v : staggered
         line = id // nx
-        P0 = int(id + nx - line - 2)
-        E0 = int(P0 + 1)
-        S0 = int(id - line - 1)
-        SE0 = int(S0 + 1)     
+        P0 = int(id + line)#int(id + nx - line - 2)
+        E0 = P0 + 1#int(P0 + 1)
+        S0 = P0 - vnx#int(id - line - 1)
+        SE0 = S0 + 1#int(S0 + 1)     
+
+        # print(f'id : {id}')
+        # print(f'P : {P0}')
+        # print(f'E : {E0}')
+        # print(f'S : {S0}')
+        # print(f'SE : {SE0} \n')
 
         vP0 = v[P0]
         vE0 = v[E0]
@@ -64,11 +72,11 @@ class NS_x(object):
         vSE0 = v[SE0]
 
         # pressure : staggered
-        P0 = int(id - line - 1)
-        E0 = int(P0 + 1)
+        #P0 = int(id - line - 1)
+       # E0 = int(P0 + 1)
         
-        pP0 = p[P0]
-        pE0 = p[E0]
+       # pP0 = p[P0]
+        #pE0 = p[E0]
 
         fw = rho*deltay*(uW0 + uP0) / 2
         fe = rho*deltay*(uE0 + uP0) / 2
@@ -83,7 +91,7 @@ class NS_x(object):
         dx = gamma*deltay / deltax
         dy = gamma*deltax / deltay
 
-        Lp = -deltay*(pE0 - pP0)      
+        Lp = 0#-deltay*(pE0 - pP0)      
 
         ## WUDS
         alfaw, betaw = self._wuds((uW0 + uP0) / 2, rho, gamma, deltax)
@@ -118,13 +126,20 @@ class NS_x(object):
         gamma = self.model['gamma']
         deltax = self.model['deltax']
         deltay = self.model['deltay']
-        nx = self.model['nx']
-
+        nx = self.model['unx']
+        vnx = self.model['vnx']
+      
         A =  np.zeros(6)
         A[-1] = tf  # B
 
         # [Ap, Aw, Ae, As, An, Lp, B]
         # [0,  1,  2,  3,  4,  5,  6]
+        line = id // nx
+        P0 = int(id + line)#int(id + nx - line - 2)
+        E0 = int(P0 + 1)
+        S0 = P0 - vnx#int(id - line - 1)
+        SE0 = int(S0 + 1)
+        
         if face =='W':
             A[0] = 1
 
@@ -132,10 +147,7 @@ class NS_x(object):
             A[0] = 1
             
         if face =='S':
-            line = id // nx
-            P0 = int(id + nx - line - 2)
-            E0 = int(P0 + 1)
-            
+                       
             vP0 = v[P0]
             vE0 = v[E0]
 
@@ -145,9 +157,6 @@ class NS_x(object):
             A[4] = -0.5 + alfan  # An
 
         if face =='N':
-            line = id // nx
-            S0 = int(id - line - 1)
-            SE0 = int(S0 + 1)
 
             vS0 = v[S0]
             vSE0 = v[SE0]
@@ -156,6 +165,12 @@ class NS_x(object):
 
             A[0] = 0.5 + alfas  # Ap
             A[3] = -0.5 + alfas  # As
+
+        # print(f'id : {id}')
+        # print(f'P : {P0}')
+        # print(f'E : {E0}')
+        # print(f'S : {S0}')
+        # print(f'SE : {SE0} \n')
 
         return A
 
@@ -192,8 +207,9 @@ class NS_y(object):
         gamma = self.model['gamma']
         deltax = self.model['deltax']
         deltay = self.model['deltay']
-        nx = self.model['nx']
-        ny = self.model['ny']
+        nx = self.model['vnx']
+        unx = self.model['unx']
+        #ny = self.model['ny']
 
         ## Index mapping
         # u : centered
@@ -207,22 +223,28 @@ class NS_y(object):
 
         # v : staggered
         line = id // nx
-        P0 = int(id + line - nx)
-        W0 = int(P0 - 1)
-        N0 = int(id + line + 1)
-        NW0 = int(N0 + 1)     
+        P0 = int(id - line) # int(id + line - nx)
+        W0 = P0 - 1 # int(P0 - 1)
+        N0 = P0 + unx # int(id + line + 1)
+        NW0 = N0 - 1 # int(N0 + 1)     
 
         uP0 = u[P0]
         uW0 = u[W0]
         uN0 = u[N0]
         uNW0 = u[NW0]
 
+        # print(f'id : {id}')
+        # print(f'P : {P0}')
+        # print(f'W : {W0}')
+        # print(f'N : {N0}')
+        # print(f'NW : {NW0} \n')
+
         # pressure : staggered
-        P0 = int(id - nx)
-        N0 = int(id)
+        #P0 = int(id - nx)
+        #N0 = int(id)
         
-        pP0 = p[P0]
-        pN0 = p[N0]    
+        #pP0 = p[P0]
+        #pN0 = p[N0]    
         
         fw = rho*deltay*(uW0 + uNW0) / 2
         fe = rho*deltay*(uP0 + uN0) / 2
@@ -232,7 +254,7 @@ class NS_y(object):
         dx = gamma*deltay / deltax
         dy = gamma*deltax / deltay
 
-        Lp = -deltax*(pN0 - pP0)
+        Lp = 0#-deltax*(pN0 - pP0)
 
         ## WUDS
         alfaw, betaw = self._wuds((uW0 + uNW0) / 2, rho, gamma, deltax)
@@ -259,16 +281,20 @@ class NS_y(object):
         gamma = self.model['gamma']
         deltax = self.model['deltax']
         deltay = self.model['deltay']
-        nx = self.model['nx']
+        nx = self.model['vnx']
+        unx = self.model['unx']
 
         A =  np.zeros(6)
         A[-1] = tf  # B
 
         # [Ap, Aw, Ae, As, An, Lp, B]
         # [0,  1,  2,  3,  4,  5,  6]
+        # v : staggered
         line = id // nx
-        P0 = int(id + line - nx)
-        N0 = int(id + line + 1)
+        P0 = int(id - line) # int(id + line - nx)
+        W0 = P0 - 1 # int(P0 - 1)
+        N0 = P0 + unx # int(id + line + 1)
+        NW0 = N0 - 1 # int(N0 + 1)   
 
         if face =='W':
             uP0 = u[P0]
@@ -280,8 +306,6 @@ class NS_y(object):
             A[2] = -0.5 + alfae  # Ae
 
         if face =='E':
-            W0 = int(P0 - 1)
-            NW0 = int(N0 - 1)
 
             uW0 = u[W0]
             uNW0 = u[NW0]
@@ -296,5 +320,11 @@ class NS_y(object):
 
         if face =='N':
             A[0] = 1
+
+        # print(f'id : {id}')
+        # print(f'P : {P0}')
+        # print(f'W : {W0}')
+        # print(f'N : {N0}')
+        # print(f'NW : {NW0} \n')
 
         return A

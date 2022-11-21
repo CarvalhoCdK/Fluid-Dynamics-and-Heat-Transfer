@@ -1,6 +1,7 @@
 import numpy as np
+import numba as nb
 
-
+@nb.njit
 def tdma1(a, b, c, d):
     """
     1D version
@@ -27,7 +28,7 @@ def tdma1(a, b, c, d):
     return t
 
 
-def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->np.ndarray:
+def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-4,max_it=1e6)->np.ndarray:
     """
     A = [[Ap], [Aw], [Ae], [As], [An]]
     """
@@ -47,6 +48,8 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->
     
     it = 0
     diff = 1
+
+    
 
     while diff > tol:
         t0 = np.copy(te)
@@ -72,6 +75,7 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->
         # Middle lines
         lines = np.arange(0,nye)
 
+      
         for line in lines:
             
             start = line*nxe
@@ -93,18 +97,18 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-6,max_it=1e6)->
         
         diff = np.max(np.abs(te-t0))
 
-        #if it % 10 == 0:
-           # print(f'it : {it}')
-            #print(f'Error : {diff} \n')
+        if it // 5000 > 0:
+          print(f'            tdma current it : {it}')
+          print(f'           Error : {diff} \n')
 
         it += 1
         if it > max_it:
-            print('Excedido limite de iterações')
+            print('    TDMA: Excedido limite de iterações')
             break
 
-    print('Solução convergida')
-    print(f'Iterações : {it}')
-    print(f'Erro : {diff} \n')
+    #print('Solução convergida')
+    print(f'        Iterações : {it}')
+    print(f'        Erro : {diff} \n')
 
     return te[nxe:n+nxe]
         
