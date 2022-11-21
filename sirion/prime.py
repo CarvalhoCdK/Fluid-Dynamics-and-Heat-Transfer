@@ -25,7 +25,7 @@ class Prime(object):
         diff = 1
         tol = 1e-4
         it = 0
-        max_it = 1000
+        max_it = 10000
 
         error = np.zeros((max_it, 4))
         op_prime = perf_counter()
@@ -98,18 +98,25 @@ class Prime(object):
             uerro = np.max(np.abs(u - u0)) / np.abs(np.max(u) - np.min(u) + e)
             verro = np.max(np.abs(v - v0)) / np.abs(np.max(v) - np.min(v) + e)
 
-            error[it-1, 0] = perro
-            error[it-1, 1] = uerro
-            error[it-1, 2] = verro
-            error[it-1, 3] = it
+            
+
+            error[it, 0] = perro
+            error[it, 1] = uerro
+            error[it, 2] = verro
+            error[it, 3] = it
+
+            dp = perro - error[it-1,0]
+            du = uerro - error[it-1,1]
+            dv = verro - error[it-1,2]
 
             # print(f'u corr: {u}')
             # print(f'        u Size : {u.shape}')
             # print(f'v corr : {v}')
-            print(f'    p Interval : [{np.min(p)}, {np.max(p)}]')
-            print(f'    perro : {perro}')
-            print(f'    uerro : {uerro}')
-            print(f'    verro : {verro}')
+            #print(f'    p Interval : [{np.min(p)}, {np.max(p)}]')
+            #np.set_printoptions(precision=5)
+            print(f'    perro : {perro:.5f}  ({dp:.2f})')
+            print(f'    uerro : {uerro:.5f}  ({du:.2f})')
+            print(f'    verro : {verro:.5f}  ({dv:.2f})')
 
 
             diff = np.max(np.array([perro, uerro, verro]))
@@ -126,6 +133,9 @@ class Prime(object):
         plt.legend()
         plt.grid()
         plt.show()
+
+        ## Set V array at center of pmesh:
+        
 
 
         return p, u, v, uunknown, vunknown

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 from time import perf_counter
 from numba import njit, jit
@@ -11,11 +12,11 @@ from prime import Prime
 
 # Re = 100, 400 e 1000
 # Parâmtros da malha
-nx = 60
-ny = 60
+nx = 5
+ny = 5
 
 # Reynolds
-Re = 100#00
+Re = 10
 
 # Geometria
 L = 1
@@ -24,29 +25,7 @@ H = 1
 # Propriedades
 rho = 1
 gamma = 1
-
 U = Re*gamma / (rho*L)
-
-TIMER = np.zeros(10)
-j = 0
-
-TIMER[j] = perf_counter()
-j += 1
-
-umesh = Mesh(nx + 1, ny+2, L, H)
-vmesh = Mesh(nx+2, ny + 1, L, H)
-pmesh = Mesh(nx, ny, L, H)
-
-#umesh.plot()
-
-TIMER[j] = perf_counter()
-j += 1
-print(f'Time: Meshing : {TIMER[1] - TIMER[0]}')
-
-# Initial Guess
-u = np.ones(umesh.elements['number'])*U
-v = np.ones(vmesh.elements['number'])*0#U/2
-p = np.ones(pmesh.elements['number'])
 
 model = {
     'rho' : 1.0,  # Densidade
@@ -61,56 +40,37 @@ model = {
     }
 
 
-momentum_u = NS_x(model)
+op = perf_counter()
+print('Meshing \n ...')
 
-#id = 2
-#w = umesh.neighbours['W'][id]
-#e = umesh.neighbours['E'][id]
-#au = momentum_u.internal(id)
+umesh = Mesh(nx + 1, ny+2, L, H)
+vmesh = Mesh(nx+2, ny + 1, L, H)
+pmesh = Mesh(nx, ny, L, H)
 
-momentum_u = NS_x(model)
-momentum_v = NS_y(model)
-
-## SET BOUNDARY CONDITIONS
-uelements = []
-velements = []
-
-
-## Define elemente type (internal, north, west,...) by list
-##PRIME
-## Guess u,v and p
-uequation = NS_x(model)
-vequation = NS_y(model)
-
-u = np.ones(umesh.elements['number'])*0
-# u[0] = 10
-# u[5] = 20
-# u[9] = 30
-v = np.ones(vmesh.elements['number'])*0
-p = np.ones(pmesh.elements['number'])
-
-
+model['U'] = U    # Boundary condition fo u at north border
 model['umesh'] = umesh
 model['unx'] = nx + 1
 
 model['vmesh'] = vmesh
 model['vnx'] = nx + 2
+
 model['pmesh'] = pmesh
-model['U'] = U
 
-## Get Ap, Aw, Ae, As, An and B ##################################################
-## Solve algebric uh and vh
-## u
+ed = perf_counter()
+print(f'    time[s] : {ed - op}')
 
+# Initial Guess
+u = np.ones(umesh.elements['number'])*0#U
+v = np.ones(vmesh.elements['number'])*0#U/2
+p = np.ones(pmesh.elements['number'])
 
+# Build discretization for u and v
+uequation = NS_x(model)
+vequation = NS_y(model)
+
+# Solve p-v
 pv_coupling = Prime(model)
 
-Uh, Apu, Vh, Apv, uniternal, vinternal = pv_coupling._get_velocity(u, uequation, v, vequation, p)
-#west, east, south, north = pv_coupling._map_pressure()
-
-deltax = model['deltax']
-deltay = model['deltay']
-nx = model['nx']
 pressure, u, v, uunknow, vunknown = pv_coupling.solve(u, uequation, v, vequation, p)
 
 ## SCALE
@@ -137,10 +97,6 @@ fig.colorbar(color, ax=ax, label='P')
 ax.set_xlabel('x', fontsize=14)  
 ax.set_ylabel('y', fontsize=14)
 ax.set_aspect('equal')
-
-
-#fig.show()
-#plt.show()
 
 ## PLOT u
 u = u[uunknow]
