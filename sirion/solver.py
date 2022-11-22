@@ -97,16 +97,16 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-4,max_it=1e6)->
         
         diff = np.max(np.abs(te-t0))
 
-        if it // 5000 > 0:
-          print(f'            tdma current it : {it}')
-          print(f'           Error : {diff} \n')
+        # if it // 5000 > 0:
+        #   print(f'            tdma current it : {it}')
+        #   print(f'           Error : {diff} \n')
 
         it += 1
         if it > max_it:
             print('    TDMA: Excedido limite de iterações')
             break
 
-    #print('Solução convergida')
+    print('Solução convergida')
     print(f'        Iterações : {it}')
     print(f'        Erro : {diff} \n')
 

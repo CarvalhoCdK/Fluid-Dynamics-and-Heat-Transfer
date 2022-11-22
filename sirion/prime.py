@@ -16,19 +16,33 @@ class Prime(object):
         self.model = model
 
     def solve(self, u, uequation, v, vequation, p):
+        """
+        Steps:
+        1) _get_velocity
+        2) map_pressure
+        3) solve_pressure
+            1 - build_pressure
+            2 - tdma
+        4) correct_velocity
+        """
 
-        
-        deltax = self.model['deltax']
-        deltay = self.model['deltay']
-        #nx = self.model['nx']
-        
         diff = 1
         tol = 1e-4
         it = 0
-        max_it = 10000
+        max_it = 50000
 
         error = np.zeros((max_it, 4))
         op_prime = perf_counter()
+
+        # Time profile
+        profile = {
+            'get_velocity' : np.array(0.0),
+            'map_pressure' : np.array(0.0),
+            'build_pressure' : np.array(0.0),
+            'tdma' : np.array(0.0),
+            'correct_velocity' : np.array(0.0),
+            'eval_errors' : np.array(0.0)
+            }
 
         while diff > tol:
 
@@ -36,70 +50,41 @@ class Prime(object):
 
             if it > max_it:
                 break
+
+            print(f'\n PRIME ITERATION : {it}')
+            print('    Solving step ...')
         
             p0 = np.copy(p)
             u0 = np.copy(u)
             v0 = np.copy(v)
 
-            #print(f'Calculate velocities uh and vh')
-            op = perf_counter()
-
-            #print(f'avg u: {np.average(u)}')
-
-           # print(f'u : {u}')
-            #print(f'        u Size : {u.shape}')
-            
-            #print(f'v : {v}')
-
+            # Calculate Velocity
+            t0 = perf_counter()
             uh, Apu, vh, Apv, uunknown, vunknown = self._get_velocity(u, uequation, v, vequation, p)
-
-            #print(f'uh : {uh}')
-            #print(f'        u Size : {u.shape}')
+            t1 = perf_counter()
+            profile['get_velocity'] += t1 - t0
             
-            #print(f'Apu : {Apu}')
-            #print(f'vh : {vh}')
-            #print(f'p : {p}')
-            #print(f'avg uh: {np.average(uh)}')
-
-            ed = perf_counter()
-            #print(f'Time : {ed - op} \n')
-            ####
-
-        # print(f'Map pressure elements')
-            op = perf_counter()
 
             [west, east, south, north, internal, corner] = self._map_pressure()
+            t2 = perf_counter()
+            profile['map_pressure'] += t2 - t1
 
-            ed = perf_counter()
-            #print(f'Time : {ed - op} \n')
-            ####
-            np.set_printoptions(precision=2)
-            #print(f'u : {u}')
-            #print(f'v : {v}')
 
-            #print('Solve Pressure')
-            op = perf_counter()
+            p, build_time, tdma_time = self.solve_pressure(uh, Apu, vh, Apv, p, west, east, south, north, internal, corner)
+            profile['build_pressure'] += build_time
+            profile['tdma'] += tdma_time
 
-            print(f'\n PRIME ITERATION : {it}')
-            print('    Solving step ...')
-
-            #print(f'    u Interval : [{np.min(u[uunknown])}, {np.max(u[uunknown])}]')
-            #print(f'    v Interval : [{np.min(v)}, {np.max(v)}]')
-
-            
-            p = self.solve_pressure(uh, Apu, vh, Apv, p, west, east, south, north, internal, corner)
-           
-            
-
+            t7 = perf_counter()
             u, v = self.correct_velocity(uh, Apu, vh, Apv, p, uunknown, vunknown)
-           # print(f'avg u corrected: {np.average(u)}')
+            t8 = perf_counter()
+            profile['correct_velocity'] += t8 - t7
+           
+            # Evaluate errors           
             e = 1e-9
             perro = np.max(np.abs(p - p0)) / np.abs(np.max(p) - np.min(p) + e)
             uerro = np.max(np.abs(u - u0)) / np.abs(np.max(u) - np.min(u) + e)
             verro = np.max(np.abs(v - v0)) / np.abs(np.max(v) - np.min(v) + e)
-
-            
-
+          
             error[it, 0] = perro
             error[it, 1] = uerro
             error[it, 2] = verro
@@ -109,33 +94,24 @@ class Prime(object):
             du = uerro - error[it-1,1]
             dv = verro - error[it-1,2]
 
-            # print(f'u corr: {u}')
-            # print(f'        u Size : {u.shape}')
-            # print(f'v corr : {v}')
-            #print(f'    p Interval : [{np.min(p)}, {np.max(p)}]')
-            #np.set_printoptions(precision=5)
             print(f'    perro : {perro:.5f}  ({dp:.2f})')
             print(f'    uerro : {uerro:.5f}  ({du:.2f})')
             print(f'    verro : {verro:.5f}  ({dv:.2f})')
 
-
             diff = np.max(np.array([perro, uerro, verro]))
+            
+            t9 = perf_counter()
+            profile['eval_errors'] += t9 - t8
             
             
         ed_prime = perf_counter()
         print(f'PRIME solution concluded in {ed_prime - op_prime}s')
-
         
-        fig, ax = plt.subplots()
-        plt.plot(error[1:it,3], error[1:it,0],  label='p')
-        plt.plot(error[1:it,3], error[1:it,1],  label='u')
-        plt.plot(error[1:it,3], error[1:it,2],  label='v')
-        plt.legend()
-        plt.grid()
-        plt.show()
+        ## Time profile
+        print(f'\n Time profile')
+        for key in profile.keys():
+            print(f'{key} : {profile[key]:.2f} [s]')
 
-        ## Set V array at center of pmesh:
-        
 
 
         return p, u, v, uunknown, vunknown
@@ -504,22 +480,18 @@ class Prime(object):
             
             return c, B 
 
+        t3 = perf_counter()
         c, B =  build_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal, corner)
-        np.set_printoptions(precision = 2)
-        # print('c')
-        # print(f'{c} \n')
+        t4 = perf_counter()
+        build_time = t4 - t3
 
-        # print('B')
-        # print(f'{B} \n') 
-        
 
-        #pressures = np.linalg.solve(Auu, Buu)
-        #print('TDMA \n')
         pressures = tdma_2d(c, B, p, nx, ny, sweep ='lines', tol=1e-4)
-
+        t5 = perf_counter()
+        tdma_time = t5 - t4
         #print(f'pressures {pressures}')
 
-        return pressures
+        return pressures, build_time, tdma_time
 
 
 

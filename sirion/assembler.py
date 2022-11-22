@@ -12,11 +12,11 @@ from prime import Prime
 
 # Re = 100, 400 e 1000
 # Parâmtros da malha
-nx = 5
-ny = 5
+nx = 30
+ny = 30
 
 # Reynolds
-Re = 10
+Re = 1
 
 # Geometria
 L = 1
@@ -78,6 +78,12 @@ u = u / Re
 v = v / Re
 # umesh.plot()
 # vmesh.plot()
+
+## Pick velocity at cell center
+
+
+
+
 
 ## PLOT PRESSURE
 x = pmesh.elements['x']
@@ -150,47 +156,51 @@ fig, ax = plt.subplots(1,2, figsize=(12,4))
 
 
 
-ghiau = np.array([[0.00E+00,0.00E+00],
-[5.47E-02,-3.72E-02],
-[6.25E-02,-4.19E-02],
-[7.03E-02,-4.78E-02],
-[1.02E-01,-6.43E-02],
-[1.72E-01,-1.02E-01],
-[2.81E-01,-1.57E-01],
-[4.53E-01,-2.11E-01],
-[5.00E-01,-2.06E-01],
-[6.17E-01,-1.36E-01],
-[7.34E-01,3.32E-03],
-[8.52E-01,2.32E-01],
-[9.53E-01,6.87E-01],
-[9.61E-01,7.37E-01],
-[9.69E-01,7.89E-01],
-[9.77E-01,8.41E-01],
-[1.00E+00,1.00E+00]])
+# ghiau = np.array([[0.00E+00,0.00E+00],
+# [5.47E-02,-3.72E-02],
+# [6.25E-02,-4.19E-02],
+# [7.03E-02,-4.78E-02],
+# [1.02E-01,-6.43E-02],
+# [1.72E-01,-1.02E-01],
+# [2.81E-01,-1.57E-01],
+# [4.53E-01,-2.11E-01],
+# [5.00E-01,-2.06E-01],
+# [6.17E-01,-1.36E-01],
+# [7.34E-01,3.32E-03],
+# [8.52E-01,2.32E-01],
+# [9.53E-01,6.87E-01],
+# [9.61E-01,7.37E-01],
+# [9.69E-01,7.89E-01],
+# [9.77E-01,8.41E-01],
+# [1.00E+00,1.00E+00]])
 
-ghiav = np.array([[0.00E+00,	0.00E+00],
-[6.25E-02,	9.23E-02],
-[7.03E-02,	1.01E-01],
-[7.81E-02,	1.09E-01],
-[9.38E-02,	1.23E-01],
-[1.56E-01,	1.61E-01],
-[2.27E-01,	1.75E-01],
-[2.34E-01,	1.75E-01],
-[5.00E-01,	5.45E-02],
-[8.05E-01,	-2.45E-01],
-[8.59E-01,	-2.24E-01],
-[9.06E-01,	-1.69E-01],
-[9.53E-01,	-1.03E-01],
-[9.53E-01,	-8.86E-02],
-[9.61E-01,	-7.39E-02],
-[9.69E-01,	-5.91E-02],
-[1.00E+00,	0.00E+00]])
+# ghiav = np.array([[0.00E+00,	0.00E+00],
+# [6.25E-02,	9.23E-02],
+# [7.03E-02,	1.01E-01],
+# [7.81E-02,	1.09E-01],
+# [9.38E-02,	1.23E-01],
+# [1.56E-01,	1.61E-01],
+# [2.27E-01,	1.75E-01],
+# [2.34E-01,	1.75E-01],
+# [5.00E-01,	5.45E-02],
+# [8.05E-01,	-2.45E-01],
+# [8.59E-01,	-2.24E-01],
+# [9.06E-01,	-1.69E-01],
+# [9.53E-01,	-1.03E-01],
+# [9.53E-01,	-8.86E-02],
+# [9.61E-01,	-7.39E-02],
+# [9.69E-01,	-5.91E-02],
+
+# [1.00E+00,	0.00E+00]])
+ghia400 = np.genfromtxt('experimental_data/Re400.csv', delimiter=',')
+ghiau = ghia400[:,:2]
+ghiav = ghia400[:,2:]
 
 #yyU = y[:, mid]
 uu = u[:, mid]
 ax[0].plot(uu, yyU)
-ax[0].plot(ghiau[:,1], ghiau[:,0], '*')
-ax[0].set_xlabel('u', fontsize=14)  
+ax[0].plot(ghiau[:,0], ghiau[:,1], '*')
+ax[0].set_xlabel('u/U', fontsize=14)  
 ax[0].set_ylabel('y', fontsize=14)
 ax[0].grid()
 
@@ -199,7 +209,37 @@ vv = v[mid,:]
 ax[1].plot(xxV, vv)
 ax[1].plot(ghiav[:,0], ghiav[:,1], '*')
 ax[1].set_xlabel('x', fontsize=14)  
-ax[1].set_ylabel('v', fontsize=14)
-plt.show()
+ax[1].set_ylabel('v/U', fontsize=14)
 ax[1].grid()
+
+plt.show()
+
+
+## CHANGE VELOCITY TO CELL CENTER
+
+
+
+
+## SAVE RESULTS
+# import pickle
+
+# output = {
+#     'Re' : Re,
+#     'pmesh' : pmesh,
+#     'umesh' : umesh,
+#     'vmesh' : vmesh,
+#     'u' : u,
+#     'v' : v,
+#     'p' : pressure,
+    
+# }
+
+# name = f'Reynolds_{Re}__Mesh_{nx}x{nx}.pickle'
+# path = 'results/'
+
+# with open(path + name, 'wb') as handle:
+#     pickle.dump(output, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# with open(path + name, 'rb') as handle:
+#     b = pickle.load(handle)
 
