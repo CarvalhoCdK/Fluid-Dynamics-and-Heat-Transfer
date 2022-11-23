@@ -27,7 +27,7 @@ class Prime(object):
         """
 
         diff = 1
-        tol = 1e-4
+        tol = 1e-5
         it = 0
         max_it = 50000
 

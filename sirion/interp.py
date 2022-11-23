@@ -14,7 +14,7 @@ class NS_x(object):
     def __init__(self, model) -> None:
         self.model = model
         
-
+    
     def _wuds(self,u, rho, gamma, delta):
 
             Pe = rho*u*delta / gamma

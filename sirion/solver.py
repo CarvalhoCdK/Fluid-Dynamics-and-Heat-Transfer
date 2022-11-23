@@ -27,7 +27,7 @@ def tdma1(a, b, c, d):
 
     return t
 
-
+@nb.njit
 def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-4,max_it=1e6)->np.ndarray:
     """
     A = [[Ap], [Aw], [Ae], [As], [An]]
@@ -54,24 +54,6 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-4,max_it=1e6)->
     while diff > tol:
         t0 = np.copy(te)
   
-        # First and last line: 
-        # for start in np.array((0, n - nxe )):
-
-        #     stop = start + nxe - 2
-        #     estart = start + nxe
-        #     estop = stop + nxe
-
-        #     al = a[start:stop]
-        #     bl = b[start:stop]
-        #     cl = c[start:stop]
-
-        #     dl = np.multiply(dn[start:stop], te[estart+nxe:estop+nxe]) + \
-        #          np.multiply(ds[start:stop], te[estart-nxe:estop-nxe]) + \
-        #          B[start:stop]
-
-        #     tl = tdma1(al, bl, cl, dl)
-        #     te[estart:estop] = tl
-
         # Middle lines
         lines = np.arange(0,nye)
 
@@ -106,9 +88,9 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-4,max_it=1e6)->
             print('    TDMA: Excedido limite de iterações')
             break
 
-    print('Solução convergida')
-    print(f'        Iterações : {it}')
-    print(f'        Erro : {diff} \n')
+    #print('Solução convergida')
+    #print(f'        Iterações : {it}')
+    #print(f'        Erro : {diff} \n')
 
     return te[nxe:n+nxe]
         

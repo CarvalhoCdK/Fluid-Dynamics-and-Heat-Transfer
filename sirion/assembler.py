@@ -11,12 +11,16 @@ from prime import Prime
 
 
 # Re = 100, 400 e 1000
+
+
 # Parâmtros da malha
-nx = 30
-ny = 30
+nx = 80
+ny = 80
+
+tol = 1e-5
 
 # Reynolds
-Re = 1
+Re = 400
 
 # Geometria
 L = 1
@@ -80,6 +84,22 @@ v = v / Re
 # vmesh.plot()
 
 ## Pick velocity at cell center
+n = pmesh.elements['number']
+um = np.zeros(n)
+vm = np.zeros(n)
+
+for el in np.arange(n):
+    
+    line = el // nx
+
+    w = el + line + nx + 1
+    e = w + 1
+    s = el + (2*line + 1)
+    n = s + nx + 2
+
+    um[el] = (u[w] + u[e]) / 2
+    vm[el] = (v[n] + v[s]) / 2
+
 
 
 
@@ -120,7 +140,7 @@ p_min,p_max = u.min(), u.max()
 
 fig, ax = plt.subplots(1, 2, figsize=(12,4))
 color = ax[0].pcolormesh(x, y, u, cmap='coolwarm',  vmin=p_min, vmax=p_max,# shading='gouraud')#,
-                         edgecolors='k', linewidths=1)
+                         edgecolors='k', linewidths=0)
 #ax[0].axis([x.min(), x.max(), y.min(), y.max()])
 fig.colorbar(color, ax=ax[0], label='u')
 ax[0].set_xlabel('x', fontsize=14)  
@@ -144,16 +164,13 @@ xxV = x[mid, :]
 p_min,p_max = v.min(), v.max()
 
 color = ax[1].pcolormesh(x, y, v, cmap='coolwarm',  vmin=p_min, vmax=p_max,# shading='gouraud')
-                         edgecolors='k', linewidths=1)
+                         edgecolors='k', linewidths=0)
 #ax[1].axis([x.min(), x.max(), y.min(), y.max()])
 fig.colorbar(color, ax=ax[1], label='v')
 ax[1].set_xlabel('x', fontsize=14)  
 ax[1].set_ylabel('y', fontsize=14)
 ax[1].set_aspect('equal')
 #fig.show()
-
-fig, ax = plt.subplots(1,2, figsize=(12,4))
-
 
 
 # ghiau = np.array([[0.00E+00,0.00E+00],
@@ -190,32 +207,92 @@ fig, ax = plt.subplots(1,2, figsize=(12,4))
 # [9.53E-01,	-8.86E-02],
 # [9.61E-01,	-7.39E-02],
 # [9.69E-01,	-5.91E-02],
-
 # [1.00E+00,	0.00E+00]])
+#ghiau = np.flip(ghiau, axis=1)
 ghia400 = np.genfromtxt('experimental_data/Re400.csv', delimiter=',')
 ghiau = ghia400[:,:2]
 ghiav = ghia400[:,2:]
 
-#yyU = y[:, mid]
-uu = u[:, mid]
-ax[0].plot(uu, yyU)
-ax[0].plot(ghiau[:,0], ghiau[:,1], '*')
+
+## u and v at horizontal and vertical center lines respectively
+x = pmesh.elements['x']
+y = pmesh.elements['y']
+
+x = x.reshape((nx, ny))
+y = y.reshape((nx, ny))
+pressure = pressure.reshape((nx, ny))
+um = um.reshape((nx, ny))
+vm = vm.reshape((nx, ny))
+
+midx = nx // 2
+midy = ny // 2
+
+uu = uu = um[:, mid]
+yyU = y[:, mid]
+
+vv = vm[mid,:]
+xxV = x[mid, :]
+
+fig, ax = plt.subplots(1,2, figsize=(12,4))
+ax[0].plot(uu, yyU, color='k')
+ax[0].plot(ghiau[:,0], ghiau[:,1], 'x', mew=2, markersize=7)
+#ax[0].plot([-0.4, 1.0], [0.5, 0.5], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
 ax[0].set_xlabel('u/U', fontsize=14)  
 ax[0].set_ylabel('y', fontsize=14)
 ax[0].grid()
 
 
-vv = v[mid,:]
-ax[1].plot(xxV, vv)
-ax[1].plot(ghiav[:,0], ghiav[:,1], '*')
+ax[1].plot(xxV, vv, color='k', label='Numérico')
+ax[1].plot(ghiav[:,0], ghiav[:,1], 'x', mew=2, markersize=7, label='Experimental')
+#ax[1].plot([0.5, 0.5], [-0.5, 0.4], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
 ax[1].set_xlabel('x', fontsize=14)  
 ax[1].set_ylabel('v/U', fontsize=14)
+ax[1].legend(loc='upper left', bbox_to_anchor=(1, 1))
 ax[1].grid()
 
 plt.show()
 
 
-## CHANGE VELOCITY TO CELL CENTER
+## Velocity field
+step = 2
+x = pmesh.elements['x']
+y = pmesh.elements['y']
+
+x = x.reshape((nx, ny))[::step,::step]
+y = y.reshape((nx, ny))[::step,::step]
+um_vf = um.reshape((nx, ny))[::step,::step]
+vm_vf = vm.reshape((nx, ny))[::step,::step]
+
+fig, ax = plt.subplots()
+
+
+plt.quiver(x, y, um_vf, vm_vf)
+
+plt.plot([0.0, 1.0], [0.5, 0.5], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
+plt.plot([0.5, 0.5], [0.0, 1.0], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
+ax.set_xlim([0.0, 1.0])
+ax.set_ylim([0.0, 1.0])
+plt.show()
+
+
+## Streamlines
+x = pmesh.elements['x']
+y = pmesh.elements['y']
+
+x = x.reshape((nx, ny))
+y = y.reshape((nx, ny))
+um = um.reshape((nx, ny))
+vm = vm.reshape((nx, ny))
+
+fig, ax = plt.subplots()
+
+plt.streamplot(x, y, um, vm, color='k')
+plt.plot([0.0, 1.0], [0.5, 0.5], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
+plt.plot([0.5, 0.5], [0.0, 1.0], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
+ax.set_xlim([0.0, 1.0])
+ax.set_ylim([0.0, 1.0])
+plt.show()
+
 
 
 
@@ -228,9 +305,10 @@ plt.show()
 #     'pmesh' : pmesh,
 #     'umesh' : umesh,
 #     'vmesh' : vmesh,
-#     'u' : u,
-#     'v' : v,
+#     'um' : um,
+#     'vm' : vm,
 #     'p' : pressure,
+#     'tol' : tol
     
 # }
 
