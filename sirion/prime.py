@@ -15,7 +15,7 @@ class Prime(object):
 
         self.model = model
 
-    def solve(self, u, uequation, v, vequation, p):
+    def solve(self, u, uequation, v, vequation, p, tolerance):
         """
         Steps:
         1) _get_velocity
@@ -27,9 +27,9 @@ class Prime(object):
         """
 
         diff = 1
-        tol = 1e-5
+        tol = tolerance
         it = 0
-        max_it = 50000
+        max_it = 100000
 
         error = np.zeros((max_it, 4))
         op_prime = perf_counter()
@@ -43,6 +43,12 @@ class Prime(object):
             'correct_velocity' : np.array(0.0),
             'eval_errors' : np.array(0.0)
             }
+
+        # Build pressure map
+        opmap = perf_counter()
+        [west, east, south, north, internal, corner] = self._map_pressure()
+        edmap = perf_counter()
+        profile['map_pressure'] += edmap - opmap
 
         while diff > tol:
 
@@ -63,13 +69,8 @@ class Prime(object):
             uh, Apu, vh, Apv, uunknown, vunknown = self._get_velocity(u, uequation, v, vequation, p)
             t1 = perf_counter()
             profile['get_velocity'] += t1 - t0
-            
-
-            [west, east, south, north, internal, corner] = self._map_pressure()
-            t2 = perf_counter()
-            profile['map_pressure'] += t2 - t1
-
-
+           
+           # Solve pressure with tdma
             p, build_time, tdma_time = self.solve_pressure(uh, Apu, vh, Apv, p, west, east, south, north, internal, corner)
             profile['build_pressure'] += build_time
             profile['tdma'] += tdma_time
@@ -114,7 +115,7 @@ class Prime(object):
 
 
 
-        return p, u, v, uunknown, vunknown
+        return p, u, v, uunknown, vunknown, it
         
 
     def _get_velocity(self, u, uequation, v, vequation, p):
@@ -132,9 +133,6 @@ class Prime(object):
         # u     
         apu = np.zeros(umesh.elements['number'])
         uh = np.zeros(umesh.elements['number'])
-        #uinternal = []
-        #unorth = []
-        #usouth = []
         uunknown = []
 
         for el in np.arange(u.shape[0]):
@@ -150,15 +148,11 @@ class Prime(object):
                 a = uequation.boundary(el, 'E', 0, u, v, p)        
 
             elif s == -1:
-                a = uequation.boundary(el, 'S', 0, u, v, p)
-                #uunknown.append(el)       
+                a = uequation.boundary(el, 'S', 0, u, v, p)   
 
             elif n == -1:
                 a = uequation.boundary(el, 'N', U, u, v, p)
-                #uunknown.append(el)    
-                #print(f'el : {el}')
-                #print(f'Navier coeff : {a}')
-            
+
             else:
                 a = uequation.internal(el, u, v, p)
                 uunknown.append(el)    
@@ -169,15 +163,9 @@ class Prime(object):
             uh[el] = (np.dot(a[1:5], unb) + a[-1]) / a[0]
             apu[el] = a[0]
 
-            #print(f'uh : {uh}')
-
         # v     
         apv = np.zeros(vmesh.elements['number'])
         vh = np.zeros(vmesh.elements['number'])
-        
-        # vinternal = []
-        # vwest = []
-        # veast = []
         vunknown = []
 
         for el in np.arange(u.shape[0]):
@@ -194,11 +182,9 @@ class Prime(object):
 
             elif w == -1:
                 a = vequation.boundary(el, 'W', 0, u, v, p)
-                #vunknown.append(el)
 
             elif e == -1:
                 a = vequation.boundary(el, 'E', 0, u, v, p)
-                #vunknown.append(el)        
             
             else:
                 a = vequation.internal(el, u, v, p)
@@ -231,6 +217,17 @@ class Prime(object):
         north = []
         internal = []
 
+        # westnew = np.arange(0, n, nx)
+        # eastnew = np.arange(nx-1, n+1, nx)
+        # southnew = np.arange(0,nx)
+        # northnew = np.arange(n-nx, n)
+
+        # print(f'new : {westnew}')
+        # print(f'new : {eastnew}')
+        # print(f'new : {southnew}')
+        # print(f'new : {northnew}')
+
+
         for el in np.arange(n):
             w = int(pmesh.neighbours['W'][el])
             e = int(pmesh.neighbours['E'][el])
@@ -258,15 +255,13 @@ class Prime(object):
         north = np.array(north)
         internal = np.array(internal)
 
-        # print(f'west : {west}')
-        # print(f'east : {east}')
-        # print(f'south : {south}')
-        # print(f'north : {north}')
+        # print(f'old : {west}')
+        # print(f'old : {east}')
+        # print(f'old : {south}')
+        # print(f'old : {north}')
         
         return west, east, south, north, internal, corner
-
-
-    
+  
     
     def solve_pressure(self,uh, Apu, vh, Apv, p, west, east, south, north, internal, corner):
 
@@ -275,27 +270,14 @@ class Prime(object):
         nx = self.model['nx']
         ny = self.model['ny']
 
-        #@njit
+        #@jit
         def build_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal, corner):
             
             dof = p.shape[0]
             c = np.zeros((dof, 5))
             B = np.zeros(dof)
-
-            # print('GROUPS')
-            # print(west)
-            # print(east)
-            # print(south)
-            # print(north)
-            # print(internal)
-            # print(corner)
-
-            ## CHECK CORNER ELEMENTS
-            # South-west
             el = corner[0]
 
-            #print('South-west')
-            #print(el)
             line = el // nx
 
             w = el + line + nx + 1
@@ -314,8 +296,6 @@ class Prime(object):
 
             # South-east
             el = corner[1]
-            #print('South-east')
-            #print(el)
             line = el // nx
 
             w = el + line + nx + 1
@@ -377,14 +357,6 @@ class Prime(object):
                 e = w + 1
                 s = el + (2*line + 1)
                 n = s + nx + 2
-
-                # print('Internal')
-                # print(el)
-                # print(w)
-                # print(e)
-                # print(s)
-                # print(n)
-                # print('\n')
                               
                 c[el,1] = deltay*deltay / Apu[w] # Aw
                 c[el,2] = deltay*deltay / Apu[e] # Ae
@@ -395,10 +367,6 @@ class Prime(object):
                 B[el] = deltay*(uh[w] - uh[e]) + deltay*(vh[s] - vh[n])
 
             for el in west[1:-1]:
-                # c[el,0] = 1 # Ap
-                # c[el,2] = 1 # Ae
-                # print('West')
-                # print(el)
                 line = el // nx
 
                 w = el + line + nx + 1
@@ -416,10 +384,6 @@ class Prime(object):
                 B[el] += deltay*(- uh[e]) + deltay*(vh[s] - vh[n]) + 0
 
             for el in east[1:-1]:
-                # c[el,0] = 1 # Ap
-                # c[el,1] = 1 # Aw
-               # print('East')
-               # print(el)
                 line = el // nx
 
                 w = el + line + nx + 1
@@ -437,10 +401,6 @@ class Prime(object):
                 B[el] += deltay*(uh[w]) + deltay*(vh[s] - vh[n])
 
             for el in south[1:-1]:
-                # c[el,0] = 1 # Ap
-                # c[el,4] = 1 # An
-               # print('South')
-               # print(el)
                 line = el // nx
 
                 w = el + line + nx + 1
@@ -458,10 +418,6 @@ class Prime(object):
                 B[el] += deltay*(uh[w] - uh[e]) + deltay*(-vh[n])
 
             for el in north[1:-1]:
-                # c[el,0] = 1 # Ap
-                # c[el,3] = 1 # As
-               # print('North')
-               # print(el)
                 line = el // nx
 
                 w = el + line + nx + 1
