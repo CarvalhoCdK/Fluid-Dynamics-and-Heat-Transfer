@@ -201,7 +201,7 @@ def solve_cavity(nx, ny, reynolds, tolerance, experimental_results, save=True):
 
     fig, ax = plt.subplots(1,2, figsize=(12,4))
     ax[0].plot(uu, yyU, color='k')
-    ax[0].plot(ghiau[:,0], ghiau[:,1], 'x', mew=2, markersize=7)
+    ax[0].plot(ghiau[:,1], ghiau[:,0], 'x', mew=2, markersize=7)
     #ax[0].plot([-0.4, 1.0], [0.5, 0.5], color='k', linestyle='--', linewidth=1.0, alpha=0.5)
     ax[0].set_xlabel('u/U', fontsize=14)  
     ax[0].set_ylabel('y', fontsize=14)
