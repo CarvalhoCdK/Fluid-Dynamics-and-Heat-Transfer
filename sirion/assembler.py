@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
-from time import perf_counter
+from time import perf_counter, ctime
 from numba import njit, jit
 
 from mesh import Mesh
@@ -259,6 +259,7 @@ def solve_cavity(nx, ny, reynolds, tolerance, experimental_results, save=True):
 
 
 ## SAVE RESULTS
+    run_date = ctime()
 
     output = {
         'Re' : Re,
@@ -270,7 +271,8 @@ def solve_cavity(nx, ny, reynolds, tolerance, experimental_results, save=True):
         'p' : pressure,
         'tol' : tol,
         'comp_time' : comp_time,
-        'prime_it' : it
+        'prime_it' : it,
+        'run_date' : run_date
     }
 
     if save:
