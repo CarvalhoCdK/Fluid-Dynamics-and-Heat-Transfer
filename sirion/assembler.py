@@ -25,7 +25,7 @@ def solve_cavity(nx, ny, reynolds, tolerance, experimental_results, save=True):
     # Reynolds
     Re = reynolds
 
-    experimental_results = np.genfromtxt('experimental_data/Re400.csv', delimiter=',')
+    #experimental_results = np.genfromtxt('experimental_data/Re400.csv', delimiter=',')
 
     # Geometria
     L = 1

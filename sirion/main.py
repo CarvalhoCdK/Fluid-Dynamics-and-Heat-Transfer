@@ -6,10 +6,10 @@ from assembler import solve_cavity
 
 
 
-nx = 40#120
-ny = 40#120
-reynolds = 1#400
-tolerance = 1e-5
+nx = 80#120
+ny = 80#120
+reynolds = 400
+tolerance = 1e-4
 experimental_results = np.genfromtxt('experimental_data/Re400.csv', delimiter=',')
 
 output = solve_cavity(nx, ny, reynolds, tolerance, experimental_results, save=False)
