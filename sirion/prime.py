@@ -95,9 +95,9 @@ class Prime(object):
             du = uerro - error[it-1,1]
             dv = verro - error[it-1,2]
 
-            print(f'    perro : {perro:.5f}  ({dp:.2f})')
-            print(f'    uerro : {uerro:.5f}  ({du:.2f})')
-            print(f'    verro : {verro:.5f}  ({dv:.2f})')
+            print(f'    perro : {perro:.6f}  ({dp:.2f})')
+            print(f'    uerro : {uerro:.6f}  ({du:.2f})')
+            print(f'    verro : {verro:.6f}  ({dv:.2f})')
 
             diff = np.max(np.array([perro, uerro, verro]))
             

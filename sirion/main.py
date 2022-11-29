@@ -20,21 +20,23 @@ ghia1000 = np.genfromtxt('experimental_data/Re1000.csv', delimiter=',')
 
 #nx = 80
 #ny = 80
-reynolds = 400
+reynolds = 100
 tolerance = 1e-5
 
-meshes = [80, 120, 180]
+meshes = [40]##10, 20, 40, 80, 120]
 for n in meshes:
 
+    print(f' __________ MESH : {n} __________')
+
     try:
-        output = solve_cavity(n, n, reynolds, tolerance, ghia100, save=True)
+        output = solve_cavity(n, n, reynolds, tolerance, ghia100, save=False)
 
     except:
         print(f'No convergence for mesh {n}x{n}')
 
 
 # COMPARE TOLERANCE
-# e = ''
+e = ''
 # fig, ax = plt.subplots()
 
 # ghiau = ghia400[:,:2]
@@ -66,13 +68,105 @@ for n in meshes:
 #     yyU = y[:, mid]
 
 
+#### COMPARE FOR MESH
 
-# ax.plot(ghiau[:,0], ghiau[:,1], 'x', mew=2, markersize=7)
-# ax.set_xlabel('u/U', fontsize=14)  
-# ax.set_ylabel('y', fontsize=14)
-# ax.grid()
+#fig, ax = plt.subplots()
 
-# ax.plot(uu['0.001'], yyU, color='k', linestyle='--', label = '0.001')
-# ax.plot(uu['0.0001'], yyU, color='k', label = '0.0001')
+ghiau = ghia100[:,:2]
+ghiav = ghia100[:,2:]
+
+uu = dict()
+uNormal = dict()
+yyU = dict()
+yNormal = dict()
+
+for mesh in [10, 20, 40, 80, 160]:
+
+    name = f'Reynolds_{100}__Mesh_{mesh}_Tol_{1e-5}.pickle'
+    path = 'results/'
+
+    with open(path + name, 'rb') as handle:
+        output = pickle.load(handle)
+
+    nx = ny = mesh
+    um = output['um']
+    pmesh = output['pmesh']
+
+    y = pmesh.elements['y']
+    y = y.reshape((nx, ny))
+
+    prime_it = output['prime_it']
+    comp_time = output['comp_time']
+
+
+    print(f'Mesh: {mesh}x{mesh}')
+    print(f'    Iterações: {prime_it}')
+    print(f'    Tempo [s]: {comp_time}')
+
+    um = um.reshape((nx, ny))
+
+    mid = nx // 2
+
+    
+    uu[str(mesh)] = um[:, mid]
+    yyU[str(mesh)] = y[:, mid]
+
+    uNormal[str(mesh)] = um[0:nx:int(mesh/10), mid]
+    yNormal[str(mesh)] = y[0:nx:int(mesh/10), mid]
+
+    
+
+fig, ax = plt.subplots()
+
+ax.plot(ghiau[:,1], ghiau[:,0], 'x', mew=2, markersize=7)
+ax.set_xlabel('u/U', fontsize=14)  
+ax.set_ylabel('y', fontsize=14)
+ax.grid()
+
+## FOR Re100
+## By Color
+ax.plot(uu['10'], yyU['10'], label = '10x10')
+ax.plot(uu['20'], yyU['20'], label = '20x20')
+ax.plot(uu['40'], yyU['40'], label = '40x40')
+ax.plot(uu['80'], yyU['80'], label = '80x80')
+ax.plot(uu['160'], yyU['160'], label = '160x160')
+ax.legend()
+plt.show()
+
+## By Linestyle
+# ax.plot(uu['10'], yyU['10'])#, color='k', marker='.', label = '10x10')
+# ax.plot(uu['20'], yyU['20'], color='k', marker='*', label = '20x20')
+# ax.plot(uu['40'], yyU['40'], color='k', label = '40x40')
+# ax.plot(uu['80'], yyU['80'], color='k', linestyle='-.', label = '80x80')
+# ax.plot(uu['160'], yyU['160'])#, color='k', linestyle='')
+# ax.legend()
+# plt.show()
+
+## Mean variation## By Color
+fig, ax = plt.subplots()
+ax.plot(uNormal['10'], yNormal['10'], label = '10x10')
+ax.plot(uNormal['20'], yNormal['20'], label = '20x20')
+ax.plot(uNormal['40'], yNormal['40'], label = '40x40')
+ax.plot(uNormal['80'], yNormal['80'], label = '80x80')
+ax.plot(uNormal['160'], yNormal['160'], label = '160x160')
+ax.legend()
+plt.show()
+
+for nx in [10, 20, 40, 80]:#]:
+    error = np.sum(np.abs(uNormal[str(2*nx)] - uNormal[str(nx)])) / 10
+    print(f'{nx}x{nx} : {error*100}')
+
+
+
+# ## FOR Re400
+# # ax.plot(uu['80'], yyU['80'], color='k', linestyle='--', label = '80x80')
+# # ax.plot(uu['120'], yyU['120'], color='k', label = '120x120')
+# # ax.legend()
+# # plt.show()
+
+#error = np.sum(np.abs(uNormal['120'] - uNormal['80'])) / 20
+
+# ax.plot(uNormal['80'], yNormal['80'], color='k', marker = '*', label = '80x80')
+# ax.plot(uNormal['120'], yNormal['120'], color='k', marker = '*', label = '120x120')
 # ax.legend()
 # plt.show()
