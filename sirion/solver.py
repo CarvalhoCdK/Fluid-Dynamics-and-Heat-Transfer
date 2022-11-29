@@ -93,4 +93,170 @@ def tdma_2d(C, B, T0, nxe: int, nye: int, sweep ='lines', tol=1e-4,max_it=1e6)->
     #print(f'        Erro : {diff} \n')
 
     return te[nxe:n+nxe]
-        
+      
+      
+@nb.njit
+def build_pressure(uh, Apu, vh, Apv, p, nx, deltax, deltay, west, east, south, north, internal, corner):
+            
+            dof = p.shape[0]
+            c = np.zeros((dof, 5))
+            B = np.zeros(dof)
+            el = corner[0]
+
+            line = el // nx
+
+            w = el + line + nx + 1
+            e = w + 1
+            s = el + (2*line + 1)
+            n = s + nx + 2
+
+            # Border balance
+            c[el,1] = 0 # deltay*deltay / Apu[w] # Aw
+            c[el,2] = deltay*deltay / Apu[e] # Ae
+            c[el,3] = 0 # deltax*deltax / Apv[s] # As
+            c[el,4] = deltax*deltax / Apv[n] # An
+            c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+            B[el] += deltay*(- uh[e]) + deltay*(- vh[n]) + 0
+
+            # South-east
+            el = corner[1]
+            line = el // nx
+
+            w = el + line + nx + 1
+            e = w + 1
+            s = el + (2*line + 1)
+            n = s + nx + 2
+
+            # Border balance
+            c[el,1] = deltay*deltay / Apu[w] # Aw
+            c[el,2] = 0#deltay*deltay / Apu[e] # Ae
+            c[el,3] = 0 # deltax*deltax / Apv[s] # As
+            c[el,4] = deltax*deltax / Apv[n] # An
+            c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+            B[el] += deltay*(uh[w]) + deltay*(- vh[n])
+
+            # North-west
+            el = corner[2]
+            #print('North-west')
+            line = el // nx
+
+            w = el + line + nx + 1
+            e = w + 1
+            s = el + (2*line + 1)
+            n = s + nx + 2
+                            
+            c[el,1] = 0#deltay*deltay / Apu[w] # Aw
+            c[el,2] = deltay*deltay / Apu[e] # Ae
+            c[el,3] = deltax*deltax / Apv[s] # As
+            c[el,4] = 0#deltax*deltax / Apv[n] # An
+            c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+            B[el] = deltay*(- uh[e]) + deltay*(vh[s])
+
+            # North-east
+            el = corner[3]
+            #print('North-east')
+            line = el // nx
+
+            w = el + line + nx + 1
+            e = w + 1
+            s = el + (2*line + 1)
+            n = s + nx + 2
+                            
+            c[el,1] = deltay*deltay / Apu[w] # Aw
+            c[el,2] = 0#deltay*deltay / Apu[e] # Ae
+            c[el,3] = deltax*deltax / Apv[s] # As
+            c[el,4] = 0#deltax*deltax / Apv[n] # An
+            c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+            B[el] = deltay*(uh[w]) + deltay*(vh[s])
+            
+            for el in internal:
+                #print(f'el : {el}')
+                #print('Internal \n')
+                line = el // nx
+
+                w = el + line + nx + 1
+                e = w + 1
+                s = el + (2*line + 1)
+                n = s + nx + 2
+                              
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[n] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] = deltay*(uh[w] - uh[e]) + deltay*(vh[s] - vh[n])
+
+            for el in west[1:-1]:
+                line = el // nx
+
+                w = el + line + nx + 1
+                e = w + 1
+                s = el + (2*line + 1)
+                n = s + nx + 2
+
+                # Border balance
+                c[el,1] = 0 # deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[n] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] += deltay*(- uh[e]) + deltay*(vh[s] - vh[n]) + 0
+
+            for el in east[1:-1]:
+                line = el // nx
+
+                w = el + line + nx + 1
+                e = w + 1
+                s = el + (2*line + 1)
+                n = s + nx + 2
+                
+                # Border balance
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = 0 # deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[n] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] += deltay*(uh[w]) + deltay*(vh[s] - vh[n])
+
+            for el in south[1:-1]:
+                line = el // nx
+
+                w = el + line + nx + 1
+                e = w + 1
+                s = el + (2*line + 1)
+                n = s + nx + 2
+
+                # Border balance
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = 0 # deltax*deltax / Apv[s] # As
+                c[el,4] = deltax*deltax / Apv[n] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] += deltay*(uh[w] - uh[e]) + deltay*(-vh[n])
+
+            for el in north[1:-1]:
+                line = el // nx
+
+                w = el + line + nx + 1
+                e = w + 1
+                s = el + (2*line + 1)
+                n = s + nx + 2
+
+                # Border balance
+                c[el,1] = deltay*deltay / Apu[w] # Aw
+                c[el,2] = deltay*deltay / Apu[e] # Ae
+                c[el,3] = deltax*deltax / Apv[s] # As
+                c[el,4] = 0 # deltax*deltax / Apv[s] # An
+                c[el,0] = c[el,1] + c[el,2] + c[el,3] + c[el,4] # Ap
+
+                B[el] += deltay*(uh[w] - uh[e]) + deltay*(vh[s])
+            
+            return c, B 
