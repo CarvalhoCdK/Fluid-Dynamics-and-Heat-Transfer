@@ -3,9 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from assembler import solve_cavity
+from time import perf_counter, ctime
 
 
-
+## TO DO
+#Re 400, 100x100, tol = [0.01, 0.001, 0.0001, 1e-6]
 
 #nx = 80#120
 #ny = 80#120
@@ -18,63 +20,65 @@ ghia1000 = np.genfromtxt('experimental_data/Re1000.csv', delimiter=',')
 
 
 
-# # # RUN FOR MULTIPLE MESHES
-# reynolds = 400
-# tolerance = 1e-5
+# # RUN FOR MULTIPLE MESHES
+reynolds = 1000
+tolerance = 1e-5
 
-# meshes = [100]##10, 20, 40, 80, 120]
-# for n in meshes:
+meshes = [10, 20, 40, 80]
+for n in meshes:
+
+    print(f' __________ MESH : {n} __________')
+    print(f'{ctime()}')
+
+    try:
+        output = solve_cavity(n, n, reynolds, tolerance, ghia1000, save=True)
+
+    except:
+        print(f'No convergence for mesh {n}x{n}')
+
+
+
+# # RUN FOR MULTIPLE TOLERANCES
+# n = 100
+# reynolds = 400
+# tols = [1e-5]
+# for tol in tols:
 
 #     print(f' __________ MESH : {n} __________')
 
 #     try:
-#         output = solve_cavity(n, n, reynolds, tolerance, ghia100, save=True)
+#         output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
 
 #     except:
 #         print(f'No convergence for mesh {n}x{n}')
 
 
-# RUN FOR MULTIPLE TOLERANCES
-n = 100
-reynolds = 400
-tols = [1e-5]
-for tol in tols:
+# n = 120
+# reynolds = 400
+# tols = [1e-6]
+# for tol in tols:
 
-    print(f' __________ MESH : {n} __________')
+#     print(f' __________ MESH : {n} __________')
 
-    try:
-        output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
+#     try:
+#         output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
 
-    except:
-        print(f'No convergence for mesh {n}x{n}')
-
-
-n = 120
-reynolds = 400
-tols = [1e-6]
-for tol in tols:
-
-    print(f' __________ MESH : {n} __________')
-
-    try:
-        output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
-
-    except:
-        print(f'No convergence for mesh {n}x{n}')
+#     except:
+#         print(f'No convergence for mesh {n}x{n}')
 
 
-n = 80
-reynolds = 100
-tols = [1e-6]
-for tol in tols:
+# n = 80
+# reynolds = 100
+# tols = [1e-6]
+# for tol in tols:
 
-    print(f' __________ MESH : {n} __________')
+#     print(f' __________ MESH : {n} __________')
 
-    try:
-        output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
+#     try:
+#         output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
 
-    except:
-        print(f'No convergence for mesh {n}x{n}')
+#     except:
+#         print(f'No convergence for mesh {n}x{n}')
 
 
 
@@ -287,10 +291,10 @@ uNormal = dict()
 yyU = dict()
 yNormal = dict()
 
-for mesh in [80, 120]:
+for mesh in [10, 20, 40, 80, 100]:
 
     name = f'Reynolds_{400}__Mesh_{mesh}_Tol_{1e-5}.pickle'
-    path = 'results/Re400_mesh/'
+    path = 'results/RE400_MESHES/'
 
     with open(path + name, 'rb') as handle:
         output = pickle.load(handle)
@@ -330,20 +334,21 @@ ax.set_xlabel('u/U', fontsize=14)
 ax.set_ylabel('y', fontsize=14)
 ax.grid()
 
+ax.plot(uu['10'], yyU['10'], label = '10x10')
+ax.plot(uu['20'], yyU['20'], label = '20x20')
+ax.plot(uu['40'], yyU['40'], label = '40x40')
 ax.plot(uu['80'], yyU['80'], label = '80x80')
-ax.plot(uu['120'], yyU['120'], label = '120x120')
-# ax.plot(uu['40'], yyU['40'], label = '40x40')
-# ax.plot(uu['80'], yyU['80'], label = '80x80')
-# ax.plot(uu['160'], yyU['160'], label = '160x160')
+ax.plot(uu['100'], yyU['100'], label = '100x100')
+#ax.plot(uu['160'], yyU['160'], label = '160x160')
 ax.legend()
 plt.show()
 
 
 i = 1
-meshes = [120, 80]
+meshes = [10, 20, 40, 80, 100]
 for nx in meshes[:-1]:#]:
     error = np.sum(np.abs(uNormal[str(nx)] - uNormal[str(meshes[i])])) / 10
-    print(f'{nx}x{nx} : {error*100}')
+    print(f'{meshes[i]}x{meshes[i]} : {error*100}')
     i += 1
 
 

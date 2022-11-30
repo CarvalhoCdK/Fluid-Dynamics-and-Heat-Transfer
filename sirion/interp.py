@@ -109,7 +109,7 @@ class NS_x(object):
         Aw =  (0.5 + alfaw)*fw + betaw*dx
         Ae = -(0.5 - alfae)*fe + betae*dx
         As =  (0.5 + alfas)*fs + betas*dy
-        An = -(0.5 + alfan)*fn + betan*dy
+        An = -(0.5 - alfan)*fn + betan*dy
         Ap = Aw + Ae + As + An
 
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
@@ -186,7 +186,7 @@ class NS_y(object):
     def _wuds(self,u, rho, gamma, delta):
 
             Pe = rho*u*delta / gamma
-            alfa = Pe**2 / (10 + 2*Pe**2)
+            alfa = Pe*np.abs(Pe) / (10 + 2*Pe**2)
             beta = (1 + 0.005*Pe**2) / (1 + 0.05*Pe**2)
 
             return alfa, beta
@@ -266,7 +266,7 @@ class NS_y(object):
         Aw =  (0.5 + alfaw)*fw + betaw*dx
         Ae = -(0.5 - alfae)*fe + betae*dx
         As =  (0.5 + alfas)*fs + betas*dy
-        An = -(0.5 + alfan)*fn + betan*dy
+        An = -(0.5 - alfan)*fn + betan*dy
         Ap = Aw + Ae + As + An
 
         return np.array([Ap, Aw, Ae, As, An, Lp, 0])
@@ -302,8 +302,8 @@ class NS_y(object):
 
             alfae, betae = self._wuds((uP0 + uN0) / 2, rho, gamma, deltax)
 
-            A[0] = 0.5 + alfae  # Ap
-            A[2] = -0.5 + alfae  # Ae
+            A[0] = -0.5 + alfae#0.5 + alfae  # Ap
+            A[2] = 0.5 + alfae#-0.5 + alfae  # Ae
 
         if face =='E':
 
