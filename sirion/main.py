@@ -18,59 +18,154 @@ ghia1000 = np.genfromtxt('experimental_data/Re1000.csv', delimiter=',')
 
 
 
-#nx = 80
-#ny = 80
-reynolds = 100
-tolerance = 1e-3
+# # # RUN FOR MULTIPLE MESHES
+# reynolds = 400
+# tolerance = 1e-5
 
-meshes = [80]##10, 20, 40, 80, 120]
-for n in meshes:
+# meshes = [100]##10, 20, 40, 80, 120]
+# for n in meshes:
+
+#     print(f' __________ MESH : {n} __________')
+
+#     try:
+#         output = solve_cavity(n, n, reynolds, tolerance, ghia100, save=True)
+
+#     except:
+#         print(f'No convergence for mesh {n}x{n}')
+
+
+# RUN FOR MULTIPLE TOLERANCES
+n = 100
+reynolds = 400
+tols = [1e-5]
+for tol in tols:
 
     print(f' __________ MESH : {n} __________')
 
     try:
-        output = solve_cavity(n, n, reynolds, tolerance, ghia100, save=True)
+        output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
 
     except:
         print(f'No convergence for mesh {n}x{n}')
 
 
-# COMPARE TOLERANCE
-e = ''
-# fig, ax = plt.subplots()
+n = 120
+reynolds = 400
+tols = [1e-6]
+for tol in tols:
 
-# ghiau = ghia400[:,:2]
-# ghiav = ghia400[:,2:]
+    print(f' __________ MESH : {n} __________')
 
-# uu = dict()
-# for tol in [0.001, 0.0001]:
+    try:
+        output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
 
-#     name = f'Reynolds_{400}__Mesh_{80}_Tol_{tol}.pickle'
-#     path = 'results/'
-
-#     with open(path + name, 'rb') as handle:
-#         output = pickle.load(handle)
-
-#     um = output['um']
-#     pmesh = output['pmesh']
-#     prime_it = output['prime_it']
-#     comp_time = output['comp_time']
-
-#     print(f'Tolerance: {tol}')
-#     print(f'    Iterações: {prime_it}')
-#     print(f'    Tempo [s]: {comp_time}')
-
-#     um = um.reshape((nx, ny))
-
-#     mid = nx // 2
-
-#     uu[str(tol)] = um[:, mid]
-#     yyU = y[:, mid]
+    except:
+        print(f'No convergence for mesh {n}x{n}')
 
 
-#### COMPARE FOR MESH
+n = 80
+reynolds = 100
+tols = [1e-6]
+for tol in tols:
 
-#fig, ax = plt.subplots()
+    print(f' __________ MESH : {n} __________')
+
+    try:
+        output = solve_cavity(n, n, reynolds, tol, ghia100, save=True)
+
+    except:
+        print(f'No convergence for mesh {n}x{n}')
+
+
+
+##########################################################################
+## COMPARE TOLERANCE
+ghiau = ghia100[:,:2]
+ghiav = ghia100[:,2:]
+
+uu = dict()
+uNormal = dict()
+yyU = dict()
+yNormal = dict()
+
+mesh = 80
+
+for tol in [0.01, 0.001, 0.0001, 0.00001]:
+
+    name = f'Reynolds_{100}__Mesh_{80}_Tol_{tol}.pickle'
+    path = 'results/Re100_tolerance_test/'
+
+    with open(path + name, 'rb') as handle:
+        output = pickle.load(handle)
+
+    nx = ny = 80
+    um = output['um']
+    pmesh = output['pmesh']
+
+    y = pmesh.elements['y']
+    y = y.reshape((nx, ny))
+
+    prime_it = output['prime_it']
+    comp_time = output['comp_time']
+
+
+    print(f'Tolerance: {tol}x{tol}')
+    print(f'    Iterações: {prime_it}')
+    print(f'    Tempo [s]: {comp_time}')
+
+    um = um.reshape((nx, ny))
+
+    mid = nx // 2
+
+    
+    uu[str(tol)] = um[:, mid]
+    yyU[str(tol)] = y[:, mid]
+   
+
+fig, ax = plt.subplots()
+
+
+ax.set_xlabel('u/U', fontsize=14)  
+ax.set_ylabel('y', fontsize=14)
+ax.grid()
+
+## FOR Re100
+## By Color
+ax.plot(uu['0.01'], yyU['0.01'], label = '1e-2')
+ax.plot(uu['0.001'], yyU['0.001'], label = '1e-3')
+ax.plot(uu['0.0001'], yyU['0.0001'], label = '1e-4')
+ax.plot(uu['1e-05'], yyU['1e-05'], label = '1e-5')
+
+ax.plot(ghiau[:,1], ghiau[:,0], 'x', color='k', mew=2, markersize=7, label='(Ghia, 1982)')
+ax.legend()
+plt.show()
+
+# Error
+i = 1
+meshes = [0.01, 0.001, 0.0001, 0.00001]
+for nx in meshes[:-1]:#]:
+    error = np.sum(np.abs(uu[str(nx)] - uu[str(meshes[i])])) / 80
+    print(f'{nx}x{nx} : {error*100}')
+    i += 1
+
+
+
+
+## COMPARE MESH
+
+ax.set_xlabel('u/U', fontsize=14)  
+ax.set_ylabel('y', fontsize=14)
+ax.grid()
+
+## FOR Re100
+## By Color
+ax.plot(uu['0.001'], yyU['0.0001'], label = '1e-3')
+ax.plot(uu['0.0001'], yyU['0.0001'], label = '1e-4')
+ax.plot(uu['1e-05'], yyU['1e-05'], label = '1e-5')
+
+ax.plot(ghiau[:,1], ghiau[:,0], 'x', color='k', mew=2, markersize=7, label='(Ghia et al.)')
+ax.legend()
+plt.show()
 
 ghiau = ghia100[:,:2]
 ghiav = ghia100[:,2:]
