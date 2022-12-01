@@ -285,8 +285,7 @@ for nx in meshes[:-1]:#]:
 # plt.show()
 
 
-## OFICIAL MESH FOR Re 100
-# 80 x 80
+
 
 ############################################################################
 ############################################################################
@@ -375,15 +374,15 @@ yNormal = dict()
 
 mesh = 80
 
-for tol in [0.001, 0.0001, 0.00001]:
+for tol in [0.00001, 0.000001]:
 
-    name = f'Reynolds_{400}__Mesh_{80}_Tol_{tol}.pickle'
-    path = 'results/Re400_tolerance test/'
+    name = f'Reynolds_{400}__Mesh_{100}_Tol_{tol}.pickle'
+    path = 'results/RE400_TOLERANCES/'
 
     with open(path + name, 'rb') as handle:
         output = pickle.load(handle)
 
-    nx = ny = 80
+    nx = ny = 100
     um = output['um']
     pmesh = output['pmesh']
 
@@ -400,7 +399,7 @@ for tol in [0.001, 0.0001, 0.00001]:
 
     um = um.reshape((nx, ny))
 
-    mid = nx // 2
+    mid = int(nx // 2)
 
     
     uu[str(tol)] = um[:, mid]
@@ -419,11 +418,19 @@ ax.grid()
 ax.plot(uu['0.001'], yyU['0.0001'], label = '1e-3')
 ax.plot(uu['0.0001'], yyU['0.0001'], label = '1e-4')
 ax.plot(uu['1e-05'], yyU['1e-05'], label = '1e-5')
+ax.plot(uu['1e-06'], yyU['1e-06'], label = '1e-6')
 
 ax.plot(ghiau[:,1], ghiau[:,0], 'x', color='k', mew=2, markersize=7, label='Ghia et al (1982)')
 ax.legend()
 plt.show()
 
+# Error
+i = 1
+meshes = [0.00001, 0.000001]
+for nx in meshes[:-1]:#]:
+    error = np.sum(np.abs(uu[str(nx)] - uu[str(meshes[i])])) / 80
+    print(f'{nx}x{nx} : {error*100}')
+    i += 1
 
 ############################################################################
 ############################################################################
