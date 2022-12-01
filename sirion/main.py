@@ -7,7 +7,15 @@ from time import perf_counter, ctime
 
 
 ## TO DO
+#  cORRIGIR PLOT DE VELOCIDADES, LEGENDA PRA DENTRO DO GRAFICO
+# SINCRONIZAR GITHUB
+
+# TAMANHO DOS NUMEROS NOS EIXOS - tick label 
+# # ax.tick_params(axis='both', which='major', labelsize=10)
+
 #Re 400, 100x100, tol = [0.01, 0.001, 0.0001, 1e-6]
+
+#Re 10000, mesh = [100, 120], tol = 1e-6
 
 #nx = 80#120
 #ny = 80#120
@@ -21,10 +29,10 @@ ghia1000 = np.genfromtxt('experimental_data/Re1000.csv', delimiter=',')
 
 
 # # RUN FOR MULTIPLE MESHES
-reynolds = 1000
-tolerance = 1e-5
+reynolds = 400
+tolerance = 1e-6
 
-meshes = [10, 20, 40, 80]
+meshes = [100]
 for n in meshes:
 
     print(f' __________ MESH : {n} __________')
@@ -94,7 +102,7 @@ yNormal = dict()
 
 mesh = 80
 
-for tol in [0.01, 0.001, 0.0001, 0.00001]:
+for tol in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
 
     name = f'Reynolds_{100}__Mesh_{80}_Tol_{tol}.pickle'
     path = 'results/Re100_tolerance_test/'
@@ -139,6 +147,7 @@ ax.plot(uu['0.01'], yyU['0.01'], label = '1e-2')
 ax.plot(uu['0.001'], yyU['0.001'], label = '1e-3')
 ax.plot(uu['0.0001'], yyU['0.0001'], label = '1e-4')
 ax.plot(uu['1e-05'], yyU['1e-05'], label = '1e-5')
+ax.plot(uu['1e-06'], yyU['1e-06'], label = '1e-6')
 
 ax.plot(ghiau[:,1], ghiau[:,0], 'x', color='k', mew=2, markersize=7, label='(Ghia, 1982)')
 ax.legend()
@@ -146,7 +155,7 @@ plt.show()
 
 # Error
 i = 1
-meshes = [0.01, 0.001, 0.0001, 0.00001]
+meshes = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
 for nx in meshes[:-1]:#]:
     error = np.sum(np.abs(uu[str(nx)] - uu[str(meshes[i])])) / 80
     print(f'{nx}x{nx} : {error*100}')
@@ -411,6 +420,103 @@ ax.plot(uu['0.001'], yyU['0.0001'], label = '1e-3')
 ax.plot(uu['0.0001'], yyU['0.0001'], label = '1e-4')
 ax.plot(uu['1e-05'], yyU['1e-05'], label = '1e-5')
 
-ax.plot(ghiau[:,1], ghiau[:,0], 'x', color='k', mew=2, markersize=7, label='(Ghia, 1982)')
+ax.plot(ghiau[:,1], ghiau[:,0], 'x', color='k', mew=2, markersize=7, label='Ghia et al (1982)')
 ax.legend()
 plt.show()
+
+
+############################################################################
+############################################################################
+## Re 1000
+
+ghiau = ghia1000[:,:2]
+ghiav = ghia1000[:,2:]
+
+uu = dict()
+uNormal = dict()
+yyU = dict()
+yNormal = dict()
+
+for mesh in [10, 20, 40, 80]:
+
+    name = f'Reynolds_{1000}__Mesh_{mesh}_Tol_{1e-5}.pickle'
+    path = 'results/RE1000_MESHES/'
+
+    with open(path + name, 'rb') as handle:
+        output = pickle.load(handle)
+
+    nx = ny = mesh
+    um = output['um']
+    pmesh = output['pmesh']
+
+    y = pmesh.elements['y']
+    y = y.reshape((nx, ny))
+
+    prime_it = output['prime_it']
+    comp_time = output['comp_time']
+
+
+    print(f'Mesh: {mesh}x{mesh}')
+    print(f'    Iterações: {prime_it}')
+    print(f'    Tempo [s]: {comp_time}')
+
+    um = um.reshape((nx, ny))
+
+    mid = nx // 2
+
+    
+    uu[str(mesh)] = um[:, mid]
+    yyU[str(mesh)] = y[:, mid]
+
+    uNormal[str(mesh)] = um[0:nx:int(mesh/10), mid]
+    yNormal[str(mesh)] = y[0:nx:int(mesh/10), mid]
+
+    
+
+fig, ax = plt.subplots()
+
+ax.plot(ghiau[:,1], ghiau[:,0], 'x', mew=2, markersize=7)
+ax.set_xlabel('u/U', fontsize=14)  
+ax.set_ylabel('y', fontsize=14)
+ax.grid()
+
+ax.plot(uu['10'], yyU['10'], label = '10x10')
+ax.plot(uu['20'], yyU['20'], label = '20x20')
+ax.plot(uu['40'], yyU['40'], label = '40x40')
+ax.plot(uu['80'], yyU['80'], label = '80x80')
+#ax.plot(uu['100'], yyU['100'], label = '100x100')
+#ax.plot(uu['160'], yyU['160'], label = '160x160')
+ax.legend()
+plt.show()
+
+
+i = 1
+meshes = [10, 20, 40, 80]
+for nx in meshes[:-1]:#]:
+    error = np.sum(np.abs(uNormal[str(nx)] - uNormal[str(meshes[i])])) / 10
+    print(f'{meshes[i]}x{meshes[i]} : {error*100}')
+    i += 1
+
+
+## Re 100; OFICIAL RESULTS
+Re = 100
+mesh = 80
+tol = 1e-6
+
+name = f'Reynolds_{Re}__Mesh_{mesh}_Tol_{tol}.pickle'
+path = 'results/Re100_tolerance_test/'
+
+with open(path + name, 'rb') as handle:
+    output = pickle.load(handle)
+
+pmesh = output['pmesh']
+p = output['p']
+
+p = p / np.abs(np.max(p))
+nx = ny = mesh
+
+x = pmesh.elements['x']
+y = pmesh.elements['y']
+
+x = x.reshape((nx, ny))
+y = y.reshape((nx, ny))
